@@ -43,3 +43,24 @@ another tab (or send the code to a friend) to join.
 npm run build   # builds client/dist
 npm start        # serves client/dist from the Express server on :4000 (or $PORT)
 ```
+
+## Deploying so friends elsewhere can actually join
+
+This needs a real public URL — it's a live server (Socket.IO + WebRTC
+signaling), not a static site, so it can't be hosted on something like
+GitHub Pages.
+
+The repo includes a `render.yaml` blueprint for [Render](https://render.com)
+(has a free tier and keeps WebSocket connections alive, unlike most
+serverless hosts):
+
+1. Push this repo to GitHub (already done if you're reading this there).
+2. On Render: **New +** → **Blueprint** → connect this repo → **Apply**.
+3. Render builds the client and starts the server on the port it assigns.
+   You'll get a URL like `https://together-booth.onrender.com`.
+4. Open that URL, start a booth, and send the code/link to anyone,
+   anywhere.
+
+The free plan spins the service down when idle, so the first request after
+a while takes ~30s to wake up — normal for testing, worth upgrading if you
+use this regularly.
