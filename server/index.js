@@ -60,6 +60,9 @@ io.on("connection", (socket) => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.hostId !== socket.id) return;
     room.settings = { ...room.settings, ...partial };
+    if (partial.totalSpots !== undefined) {
+      room.settings.totalSpots = Math.min(8, Math.max(room.participants.size, partial.totalSpots));
+    }
     io.to(room.code).emit("settings:update", room.settings);
   });
 
@@ -112,11 +115,15 @@ io.on("connection", (socket) => {
 
 function finishRound(room) {
   if (!room.round) return;
-  const photos = Array.from(room.round.submissions.entries()).map(([id, dataUrl]) => ({
-    id,
-    name: room.participants.get(id)?.name || "Guest",
-    dataUrl,
-  }));
+  // Order by join order (spot number) rather than submission arrival order,
+  // so the strip always lines up with the "choose your spot" list.
+  const photos = Array.from(room.participants.keys())
+    .filter((id) => room.round.submissions.has(id))
+    .map((id) => ({
+      id,
+      name: room.participants.get(id)?.name || "Guest",
+      dataUrl: room.round.submissions.get(id),
+    }));
   io.to(room.code).emit("round:complete", { photos, settings: room.settings });
   room.round = null;
 }

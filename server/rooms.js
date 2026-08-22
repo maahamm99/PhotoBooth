@@ -4,9 +4,11 @@ const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
 
 const DEFAULT_SETTINGS = {
   filter: "classic",
-  frame: "sunset",
-  layout: "strip",
-  caption: "together, apart",
+  color: "ink",
+  shape: "square",
+  infoPosition: "below",
+  caption: "Together",
+  totalSpots: 1,
 };
 
 // code -> room
@@ -36,6 +38,9 @@ function joinRoom(code, socketId, name) {
   if (!room) return { error: "That booth code doesn't exist." };
   if (room.participants.size >= 8) return { error: "This booth is full (max 8)." };
   room.participants.set(socketId, { name, id: socketId });
+  if (room.settings.totalSpots < room.participants.size) {
+    room.settings.totalSpots = room.participants.size;
+  }
   return { room };
 }
 

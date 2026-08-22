@@ -1,13 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import { useLocation, useParams, Link } from "react-router-dom";
 import { socket } from "../socket.js";
 import { useWebRTC } from "../hooks/useWebRTC.js";
 import { FILTERS } from "../theme.js";
 import { composePhotos } from "../utils/compose.js";
-import VideoTile from "../components/VideoTile.jsx";
-import DesignPanel from "../components/DesignPanel.jsx";
+import ControlsPanel from "../components/ControlsPanel.jsx";
+import StripPreview from "../components/StripPreview.jsx";
+import ReadyPanel from "../components/ReadyPanel.jsx";
 import CountdownOverlay from "../components/CountdownOverlay.jsx";
-import PhotoResult from "../components/PhotoResult.jsx";
+import Footer from "../components/Footer.jsx";
+
+const DEFAULT_SETTINGS = {
+  filter: "classic",
+  color: "ink",
+  shape: "square",
+  infoPosition: "below",
+  caption: "Together",
+  totalSpots: 1,
+};
 
 function ensureConnected(cb) {
   if (socket.connected) return cb();
@@ -18,7 +28,6 @@ function ensureConnected(cb) {
 export default function Booth() {
   const { code } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const [room, setRoom] = useState(location.state?.initialRoom || null);
   const [joined, setJoined] = useState(!!location.state?.initialRoom);
@@ -35,7 +44,6 @@ export default function Booth() {
   const [waiting, setWaiting] = useState(false);
   const [progress, setProgress] = useState(null);
   const [resultUrl, setResultUrl] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   const localVideoRef = useRef(null);
   const settingsRef = useRef(room?.settings);
@@ -43,7 +51,6 @@ export default function Booth() {
     settingsRef.current = room?.settings;
   }, [room]);
 
-  // -- connection bookkeeping -------------------------------------------------
   useEffect(() => {
     function onConnect() {
       setSelfId(socket.id);
@@ -86,7 +93,6 @@ export default function Booth() {
     });
   }
 
-  // -- camera -----------------------------------------------------------------
   useEffect(() => {
     if (!joined) return;
     let stream;
@@ -106,13 +112,13 @@ export default function Booth() {
     };
   }, [joined, mediaAttempt]);
 
+  const participants = room?.participants || [];
   const peerIds = useMemo(
-    () => (room ? room.participants.map((p) => p.id).filter((id) => id !== selfId) : []),
-    [room, selfId]
+    () => participants.map((p) => p.id).filter((id) => id !== selfId),
+    [participants, selfId]
   );
   const remoteStreams = useWebRTC(socket, selfId, peerIds, localStream);
 
-  // -- countdown + capture -----------------------------------------------------
   function captureNow() {
     const video = localVideoRef.current;
     if (!video || video.readyState < 2) return;
@@ -208,13 +214,13 @@ export default function Booth() {
 
   if (!joined) {
     return (
-      <div className="page page--narrow">
-        <Link to="/" className="brand brand--small">
-          📸 Together Booth
+      <div className="page-fixed page-fixed--center">
+        <Link to="/" className="wordmark wordmark--small">
+          Together Booth
         </Link>
-        <div className="card">
+        <div className="gate-card">
           <h2>Join booth {code}</h2>
-          <p className="card__sub">Enter your name to step inside.</p>
+          <p className="home-col__sub">Enter your name to step inside.</p>
           <form onSubmit={submitGate}>
             <label>
               Your name
@@ -231,89 +237,73 @@ export default function Booth() {
   }
 
   const isHost = !!(room && selfId && room.hostId === selfId);
-  const settings = room?.settings || { filter: "classic", frame: "sunset", layout: "strip", caption: "" };
+  const settings = room?.settings || DEFAULT_SETTINGS;
   const filterCss = FILTERS[settings.filter]?.css;
+  const totalSpots = Math.max(settings.totalSpots || 1, participants.length);
+
+  const spots = Array.from({ length: totalSpots }, (_, i) => {
+    const person = participants[i];
+    if (!person) return null;
+    const isLocal = person.id === selfId;
+    return {
+      id: person.id,
+      name: person.name,
+      isLocal,
+      stream: isLocal ? localStream : remoteStreams.get(person.id),
+    };
+  });
+
+  const mySpotIndex = participants.findIndex((p) => p.id === selfId);
+  const mySpot = mySpotIndex >= 0 ? mySpotIndex + 1 : 1;
+  const openSpots = totalSpots - participants.length;
 
   return (
-    <div className="page">
-      <header className="booth-header">
-        <Link to="/" className="brand brand--small">
-          📸 Together Booth
+    <div className="page-fixed">
+      <header className="top-bar top-bar--booth">
+        <Link to="/" className="wordmark wordmark--small">
+          Together Booth
         </Link>
-        <button
-          type="button"
-          className="code-pill"
-          onClick={() => {
-            navigator.clipboard?.writeText(code);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }}
-          title="Copy booth code"
-        >
-          Code: <strong>{code}</strong> {copied ? "✓ copied" : "⧉"}
-        </button>
-        <span className="pill">{room?.participants.length || 1} in the booth</span>
       </header>
 
-      {mediaError && (
-        <div className="banner banner--warn">
-          <p>{mediaError} Together Booth needs your camera to take part.</p>
-          <button className="btn btn--ghost" onClick={() => setMediaAttempt((n) => n + 1)}>
-            Try again
-          </button>
-        </div>
-      )}
+      <main className="booth-columns">
+        <ControlsPanel
+          code={code}
+          settings={settings}
+          isHost={isHost}
+          participants={participants}
+          selfId={selfId}
+          onChange={(patch) => socket.emit("settings:update", patch)}
+          onStartOver={() => socket.emit("round:reset")}
+        />
 
-      {resultUrl ? (
-        <PhotoResult imageUrl={resultUrl} isHost={isHost} onRetake={() => socket.emit("round:reset")} />
-      ) : (
-        <>
-          <div className="video-grid">
-            <VideoTile
-              ref={localVideoRef}
-              stream={localStream}
-              name={room?.participants.find((p) => p.id === selfId)?.name || "You"}
-              isLocal
-              muted
-              filterCss={filterCss}
-              flash={countdown === 0}
-            />
-            {peerIds.map((id) => (
-              <VideoTile
-                key={id}
-                stream={remoteStreams.get(id)}
-                name={room?.participants.find((p) => p.id === id)?.name || "Guest"}
-                filterCss={filterCss}
-                flash={countdown === 0}
-              />
-            ))}
-          </div>
+        <StripPreview
+          spots={spots}
+          settings={settings}
+          filterCss={filterCss}
+          flashOn={countdown === 0}
+          resultUrl={resultUrl}
+          isHost={isHost}
+          waiting={waiting}
+          captureDisabled={countdown !== null || waiting || !localStream}
+          progress={progress}
+          onCapture={() => socket.emit("countdown:start", { seconds: 3 })}
+          onRetake={() => socket.emit("round:reset")}
+        />
 
-          <div className="booth-footer">
-            <DesignPanel settings={settings} isHost={isHost} onChange={(patch) => socket.emit("settings:update", patch)} />
-
-            <div className="capture-bar">
-              {isHost ? (
-                <button
-                  type="button"
-                  className="btn btn--primary btn--lg"
-                  disabled={countdown !== null || waiting || !localStream}
-                  onClick={() => socket.emit("countdown:start", { seconds: 3 })}
-                >
-                  {waiting ? "Developing…" : "Take the picture 📸"}
-                </button>
-              ) : (
-                <p className="capture-bar__hint">
-                  {waiting ? "Say cheese — developing your strip…" : "Waiting for the host to start the countdown…"}
-                </p>
-              )}
-              {progress && <p className="capture-bar__progress">{progress.received}/{progress.total} smiles captured</p>}
-            </div>
-          </div>
-        </>
-      )}
+        <ReadyPanel
+          localVideoRef={localVideoRef}
+          localStream={localStream}
+          filterCss={filterCss}
+          flash={countdown === 0}
+          mySpot={mySpot}
+          openSpots={openSpots}
+          mediaError={mediaError}
+          onRetryMedia={() => setMediaAttempt((n) => n + 1)}
+        />
+      </main>
 
       <CountdownOverlay value={countdown} />
+      <Footer />
     </div>
   );
 }

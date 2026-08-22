@@ -1,4 +1,4 @@
-import { FRAMES } from "../theme.js";
+import { COLORS, heartPath } from "../theme.js";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -18,129 +18,102 @@ function drawCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-function paintBackground(ctx, w, h, frame) {
-  const gradient = ctx.createLinearGradient(0, 0, w, h);
-  gradient.addColorStop(0, frame.colors[0]);
-  gradient.addColorStop(0.55, frame.colors[1]);
-  gradient.addColorStop(1, frame.colors[2]);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
-function paintPolaroid(ctx, x, y, w, h, frame) {
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.28)";
-  ctx.shadowBlur = 16;
-  ctx.shadowOffsetY = 6;
-  ctx.fillStyle = frame.paper;
-  ctx.fillRect(x, y, w, h);
-  ctx.restore();
-}
-
-function paintFooter(ctx, x, y, w, frame, text) {
-  ctx.fillStyle = frame.ink;
-  ctx.font = "600 22px 'Fredoka', 'Segoe UI', sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, x + w / 2, y);
-  ctx.font = "400 13px 'Inter', 'Segoe UI', sans-serif";
-  ctx.globalAlpha = 0.75;
-  ctx.fillText("togetherbooth.app", x + w / 2, y + 26);
-  ctx.globalAlpha = 1;
+function todayLabel() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${mm}.${dd}.${d.getFullYear()}`;
 }
 
 export async function composePhotos(photos, settings) {
-  const frame = FRAMES[settings.frame] || FRAMES.sunset;
+  const color = COLORS[settings.color] || COLORS.ink;
+  const shape = settings.shape || "square";
+  const infoPosition = settings.infoPosition || "below";
   const images = await Promise.all(photos.map((p) => loadImage(p.dataUrl)));
 
-  const photoW = 420;
-  const photoH = 315;
-  const inset = 16;
-  const gap = 22;
-  const pad = 34;
+  const stripW = 380;
+  const pad = 22;
+  const gap = 16;
+  const photoW = stripW - pad * 2;
+  const photoH = Math.round(photoW * 0.74);
+  const nameH = infoPosition === "below" ? 30 : 0;
+  const cellH = photoH + nameH;
+  const headerH = 78;
+  const footerH = 92;
 
-  let canvas, ctx, photoBoxes;
+  const canvas = document.createElement("canvas");
+  canvas.width = stripW;
+  canvas.height = headerH + images.length * cellH + Math.max(0, images.length - 1) * gap + footerH;
+  const ctx = canvas.getContext("2d");
 
-  if (settings.layout === "grid") {
-    const cols = images.length <= 1 ? 1 : images.length <= 4 ? 2 : 3;
-    const rows = Math.ceil(images.length / cols);
-    const cellW = photoW * 0.72;
-    const cellH = photoH * 0.72;
-    const w = pad * 2 + cols * cellW + (cols - 1) * gap;
-    const headerH = 96;
-    const footerH = 84;
-    const h = headerH + rows * cellH + (rows - 1) * gap + footerH;
+  ctx.fillStyle = color.paper;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    ctx = canvas.getContext("2d");
-    paintBackground(ctx, w, h, frame);
+  ctx.fillStyle = color.ink;
+  ctx.textAlign = "center";
+  ctx.font = "600 26px 'Fraunces', Georgia, serif";
+  ctx.fillText(settings.caption || "Together", canvas.width / 2, 48);
 
-    photoBoxes = images.map((img, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      return {
-        img,
-        x: pad + col * (cellW + gap),
-        y: headerH + row * (cellH + gap),
-        w: cellW,
-        h: cellH,
-        name: photos[i].name,
-      };
-    });
+  images.forEach((img, i) => {
+    const x = pad;
+    const y = headerH + i * (cellH + gap);
 
-    ctx.fillStyle = frame.ink;
-    ctx.textAlign = "center";
-    ctx.font = "600 30px 'Fredoka', 'Segoe UI', sans-serif";
-    ctx.fillText(settings.caption || "together, apart", w / 2, 52);
-
-    photoBoxes.forEach(({ img, x, y, w: bw, h: bh, name }) => {
-      paintPolaroid(ctx, x, y, bw, bh, frame);
+    ctx.save();
+    if (shape === "heart") {
+      heartPath(ctx, x, y, photoW, photoH);
+      ctx.clip();
+      ctx.fillStyle = "#00000015";
+      ctx.fillRect(x, y, photoW, photoH);
+      drawCover(ctx, img, x, y, photoW, photoH);
+    } else {
+      roundRectPath(ctx, x, y, photoW, photoH, 10);
       ctx.save();
-      ctx.filter = "none";
-      drawCover(ctx, img, x + inset * 0.6, y + inset * 0.6, bw - inset * 1.2, bh - inset * 1.6);
+      ctx.clip();
+      drawCover(ctx, img, x, y, photoW, photoH);
       ctx.restore();
-      ctx.fillStyle = frame.ink;
-      ctx.font = "500 13px 'Inter', 'Segoe UI', sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(name, x + bw / 2, y + bh - inset * 0.55);
-    });
+      ctx.strokeStyle = `${color.ink}22`;
+      ctx.lineWidth = 1;
+      roundRectPath(ctx, x, y, photoW, photoH, 10);
+      ctx.stroke();
+    }
+    ctx.restore();
 
-    paintFooter(ctx, pad, h - footerH / 2, w - pad * 2, frame, "");
-  } else {
-    const w = photoW + pad * 2;
-    const headerH = 88;
-    const footerH = 96;
-    const h = headerH + images.length * (photoH + gap) - gap + footerH;
-
-    canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    ctx = canvas.getContext("2d");
-    paintBackground(ctx, w, h, frame);
-
-    ctx.fillStyle = frame.ink;
-    ctx.textAlign = "center";
-    ctx.font = "600 32px 'Fredoka', 'Segoe UI', sans-serif";
-    ctx.fillText(settings.caption || "together, apart", w / 2, 54);
-
-    images.forEach((img, i) => {
-      const x = pad;
-      const y = headerH + i * (photoH + gap);
-      paintPolaroid(ctx, x, y, photoW, photoH, frame);
+    if (infoPosition === "center") {
       ctx.save();
-      ctx.filter = "none";
-      drawCover(ctx, img, x + inset, y + inset, photoW - inset * 2, photoH - inset * 2 - 20);
-      ctx.restore();
-      ctx.fillStyle = frame.ink;
-      ctx.font = "500 15px 'Inter', 'Segoe UI', sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(photos[i].name, x + photoW / 2, y + photoH - 12);
-    });
+      ctx.font = "500 14px 'Inter', 'Segoe UI', sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(photos[i].name, x + photoW / 2, y + photoH - 14);
+      ctx.restore();
+    } else if (infoPosition === "below") {
+      ctx.fillStyle = color.ink;
+      ctx.textAlign = "center";
+      ctx.font = "500 14px 'Inter', 'Segoe UI', sans-serif";
+      ctx.fillText(photos[i].name, x + photoW / 2, y + photoH + 20);
+    }
+  });
 
-    paintFooter(ctx, pad, h - footerH / 2 - 6, photoW, frame, "");
-  }
+  ctx.fillStyle = color.ink;
+  ctx.textAlign = "center";
+  const footerY = canvas.height - footerH / 2 - 10;
+  ctx.font = "600 20px 'Fraunces', Georgia, serif";
+  ctx.fillText(settings.caption || "Together", canvas.width / 2, footerY);
+  ctx.font = "400 13px 'Inter', 'Segoe UI', sans-serif";
+  ctx.globalAlpha = 0.75;
+  ctx.fillText(todayLabel(), canvas.width / 2, footerY + 24);
+  ctx.globalAlpha = 1;
 
   return canvas.toDataURL("image/png");
 }
