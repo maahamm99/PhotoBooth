@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile.jsx";
-import { COLORS } from "../theme.js";
+import { COLORS, MAX_SPOTS } from "../theme.js";
 
 function todayLabel() {
   const d = new Date();
@@ -10,7 +10,7 @@ function todayLabel() {
 }
 
 const CELL_GAP = 10;
-const MIN_CELL_H = 60;
+const MIN_CELL_SIZE = 60;
 const LABEL_H = 16;
 
 export default function StripPreview({
@@ -31,26 +31,29 @@ export default function StripPreview({
   onRetake,
 }) {
   const cellsRef = useRef(null);
-  const [cellHeight, setCellHeight] = useState(200);
-  const count = spots.length || 1;
+  const [cellSize, setCellSize] = useState(200);
   const labelAllowance = (settings.infoPosition || "below") === "below" ? LABEL_H : 0;
 
+  // Sized once against the booth's max capacity (not the current spot count),
+  // so a card is always the same fixed square -- adding or removing a spot
+  // never resizes the ones already there.
   useLayoutEffect(() => {
     const el = cellsRef.current;
     if (!el) return;
 
     function recompute() {
       const h = el.clientHeight;
-      const budget = h - CELL_GAP * (count - 1) - labelAllowance * count;
-      const size = Math.max(MIN_CELL_H, Math.floor(budget / count));
-      setCellHeight(size);
+      const w = el.clientWidth;
+      const heightBudget = h - CELL_GAP * (MAX_SPOTS - 1) - labelAllowance * MAX_SPOTS;
+      const size = Math.max(MIN_CELL_SIZE, Math.min(w, Math.floor(heightBudget / MAX_SPOTS)));
+      setCellSize(size);
     }
 
     recompute();
     const observer = new ResizeObserver(recompute);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [count, labelAllowance]);
+  }, [labelAllowance]);
 
   if (resultUrl) {
     return (
@@ -95,7 +98,7 @@ export default function StripPreview({
               <div key={i} className="strip-cell-wrap">
                 <div
                   className={`strip-cell ${spot ? "" : "strip-cell--open"} ${isActive ? "strip-cell--active" : ""} ${isHeart ? "strip-cell--heart" : ""}`}
-                  style={{ background: isHeart ? color.paper : undefined, height: cellHeight }}
+                  style={{ background: isHeart ? color.paper : undefined, width: cellSize, height: cellSize }}
                 >
                   {spot ? (
                     <VideoTile
