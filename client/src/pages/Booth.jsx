@@ -47,8 +47,8 @@ export default function Booth() {
   const [mediaAttempt, setMediaAttempt] = useState(0);
 
   const [countdown, setCountdown] = useState(null);
-  const [waiting, setWaiting] = useState(false);
-  const [progress, setProgress] = useState(null);
+  const [activeStep, setActiveStep] = useState(null); // { spotIndex, step, totalSteps }
+  const [roundInProgress, setRoundInProgress] = useState(false);
   const [resultUrl, setResultUrl] = useState(null);
   const [elapsed, setElapsed] = useState(0);
 
@@ -132,7 +132,29 @@ export default function Booth() {
   );
   const remoteStreams = useWebRTC(socket, selfId, peerIds, localStream);
 
-  function captureNow() {
+  const rawSpots = room?.spots || [];
+  const totalSpots = rawSpots.length;
+
+  const spots = rawSpots.map((slot) => {
+    if (!slot.ownerId) return null;
+    const isLocal = slot.ownerId === selfId;
+    return {
+      id: slot.ownerId,
+      name: slot.name,
+      isLocal,
+      stream: isLocal ? localStream : remoteStreams.get(slot.ownerId),
+    };
+  });
+
+  const mySpotIndexes = rawSpots.reduce((acc, s, i) => (s.ownerId === selfId ? [...acc, i] : acc), []);
+  // Captures fire from inside setTimeout closures set up once per countdown
+  // event, so they read this ref rather than a (possibly stale) state value.
+  const mySpotIndexesRef = useRef(mySpotIndexes);
+  useEffect(() => {
+    mySpotIndexesRef.current = mySpotIndexes;
+  }, [mySpotIndexes]);
+
+  function captureNow(spotIndex) {
     const video = localVideoRef.current;
     if (!video || video.readyState < 2) return;
 
@@ -163,20 +185,22 @@ export default function Booth() {
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
+    // Captured as a JPEG data URL kept only in memory for this tab; it's sent
+    // once over the socket for this spot's turn and never written to disk.
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    socket.emit("photo:submit", { dataUrl });
-    setWaiting(true);
+    socket.emit("photo:submit", { spotIndex, dataUrl });
   }
 
   const timersRef = useRef([]);
   useEffect(() => {
-    function onStarted({ startAt, seconds }) {
+    function onStarted({ startAt, seconds, spotIndex, step, totalSteps }) {
       timersRef.current.forEach(clearTimeout);
       timersRef.current = [];
 
       setResultUrl(null);
-      setWaiting(false);
-      setProgress(null);
+      setRoundInProgress(true);
+      setActiveStep({ spotIndex, step, totalSteps });
+
       const now = Date.now();
       for (let n = seconds; n >= 1; n--) {
         const delay = Math.max(0, startAt - n * 1000 - now);
@@ -186,7 +210,9 @@ export default function Booth() {
       timersRef.current.push(
         setTimeout(() => {
           setCountdown(0);
-          captureNow();
+          if (mySpotIndexesRef.current.includes(spotIndex)) {
+            captureNow(spotIndex);
+          }
           timersRef.current.push(setTimeout(() => setCountdown(null), 450));
         }, captureDelay)
       );
@@ -201,25 +227,20 @@ export default function Booth() {
   }, []);
 
   useEffect(() => {
-    function onProgress(p) {
-      setProgress(p);
-    }
     function onComplete({ photos, settings }) {
-      setWaiting(false);
-      setProgress(null);
+      setRoundInProgress(false);
+      setActiveStep(null);
       composePhotos(photos, settings).then(setResultUrl);
     }
     function onReset() {
       setResultUrl(null);
-      setWaiting(false);
+      setRoundInProgress(false);
+      setActiveStep(null);
       setCountdown(null);
-      setProgress(null);
     }
-    socket.on("round:progress", onProgress);
     socket.on("round:complete", onComplete);
     socket.on("round:reset", onReset);
     return () => {
-      socket.off("round:progress", onProgress);
       socket.off("round:complete", onComplete);
       socket.off("round:reset", onReset);
     };
@@ -252,21 +273,7 @@ export default function Booth() {
   const isHost = !!(room && selfId && room.hostId === selfId);
   const settings = room?.settings || DEFAULT_SETTINGS;
   const filterCss = FILTERS[settings.filter]?.css;
-  const rawSpots = room?.spots || [];
-  const totalSpots = rawSpots.length;
 
-  const spots = rawSpots.map((slot) => {
-    if (!slot.ownerId) return null;
-    const isLocal = slot.ownerId === selfId;
-    return {
-      id: slot.ownerId,
-      name: slot.name,
-      isLocal,
-      stream: isLocal ? localStream : remoteStreams.get(slot.ownerId),
-    };
-  });
-
-  const mySpotIndexes = rawSpots.reduce((acc, s, i) => (s.ownerId === selfId ? [...acc, i] : acc), []);
   const mySpotLabel =
     mySpotIndexes.length <= 1
       ? `spot ${mySpotIndexes[0] + 1 || 1}`
@@ -284,6 +291,8 @@ export default function Booth() {
     .filter((_, i) => !mySpotIndexes.includes(i));
 
   const selfName = participants.find((p) => p.id === selfId)?.name || "Guest";
+  const activeSpotName = activeStep ? rawSpots[activeStep.spotIndex]?.name : null;
+  const myTurn = activeStep !== null && mySpotIndexes.includes(activeStep.spotIndex);
 
   return (
     <div className="page-fixed page-fixed--booth">
@@ -316,14 +325,15 @@ export default function Booth() {
           spots={spots}
           settings={settings}
           filterCss={filterCss}
+          activeSpotIndex={activeStep?.spotIndex ?? null}
           flashOn={countdown === 0}
           timerText={timerText}
           resultUrl={resultUrl}
           isHost={isHost}
-          waiting={waiting}
-          captureDisabled={countdown !== null || waiting || !localStream}
-          progress={progress}
-          onCapture={() => socket.emit("countdown:start", { seconds: 3 })}
+          roundInProgress={roundInProgress}
+          activeStep={activeStep}
+          captureDisabled={roundInProgress || !localStream}
+          onCapture={() => socket.emit("countdown:start")}
           onRetake={() => socket.emit("round:reset")}
         />
 
@@ -331,18 +341,19 @@ export default function Booth() {
           localVideoRef={localVideoRef}
           localStream={localStream}
           filterCss={filterCss}
-          flash={countdown === 0}
+          flash={countdown === 0 && myTurn}
           shape={settings.shape}
           timerText={timerText}
           statusText={statusText}
           otherSpots={otherSpots}
+          myTurn={myTurn}
           mediaError={mediaError}
           onRetryMedia={() => setMediaAttempt((n) => n + 1)}
         />
       </main>
 
-      <CountdownOverlay value={countdown} />
-      <Footer note="everyone shoots at the same count" />
+      <CountdownOverlay value={countdown} spotName={activeSpotName} step={activeStep?.step} totalSteps={activeStep?.totalSteps} />
+      <Footer note="one spot at a time" />
     </div>
   );
 }

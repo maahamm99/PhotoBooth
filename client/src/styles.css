@@ -864,42 +864,54 @@ input:focus {
   font-size: 15px;
   letter-spacing: -0.4px;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
+/* Each spot card is a fixed size (matches the download) -- adding more spots
+   makes this list taller and scrollable, it never shrinks existing cards. */
 .strip-mock__cells {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 10px;
   flex: 1;
   min-height: 0;
   width: 100%;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .strip-cell-wrap {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex: none;
+  width: 100%;
 }
 
 .strip-cell {
   position: relative;
   flex: none;
+  width: 100%;
+  aspect-ratio: 100 / 92;
   border: 1.5px solid var(--ink);
   border-radius: 2px;
   background: var(--ink);
   display: grid;
   place-items: center;
   overflow: hidden;
+  transition: box-shadow 150ms ease;
 }
 
 .strip-cell--open {
   border-style: dashed;
-  background: #f1e8d8;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.strip-cell--heart {
+  border-color: transparent;
+}
+
+.strip-cell--active {
+  box-shadow: 0 0 0 3px var(--red);
 }
 
 .strip-cell__empty {
@@ -1035,6 +1047,11 @@ input:focus {
   background: var(--ink);
 }
 
+.video-tile--heart {
+  border-color: transparent;
+  background: transparent;
+}
+
 .video-tile:not(.video-tile--compact) {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -1139,11 +1156,22 @@ input:focus {
   position: fixed;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   background: rgba(20, 20, 20, 0.55);
   z-index: 50;
   pointer-events: none;
+}
+
+.countdown-overlay__subtitle {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cream);
 }
 
 .countdown-overlay__number {

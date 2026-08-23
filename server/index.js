@@ -39,7 +39,14 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-const ROUND_TIMEOUT_MS = 10_000;
+// Photos are never written to disk or a database. A captured frame's dataUrl
+// passes through this process only inside room.round.submissions -- a plain
+// in-memory Map that exists only for the few seconds a capture round takes --
+// and is discarded (room.round = null) the moment the round finishes or is
+// reset. Nothing here is logged, persisted, or kept once the strip is built.
+const STEP_SECONDS = 3;
+const STEP_GRACE_MS = 4000;
+const COUNTDOWN_LEAD_MS = 400;
 
 function broadcastRoom(room) {
   io.to(room.code).emit("room:update", roomSummary(room));
@@ -105,36 +112,32 @@ io.on("connection", (socket) => {
     io.to(to).emit("webrtc:signal", { from: socket.id, data });
   });
 
-  socket.on("countdown:start", ({ seconds = 3 } = {}) => {
+  // Start a round: every filled spot gets its own turn, one after another,
+  // each with its own countdown. Only that spot's owner captures on their turn.
+  socket.on("countdown:start", () => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.hostId !== socket.id) return;
-
-    room.round = { submissions: new Map(), startedAt: Date.now() };
-    const startAt = Date.now() + 600;
-    io.to(room.code).emit("countdown:started", { startAt, seconds });
-
-    clearTimeout(room.round.timeout);
-    room.round.timeout = setTimeout(() => finishRound(room), startAt - Date.now() + seconds * 1000 + ROUND_TIMEOUT_MS);
+    if (room.round) return;
+    startRound(room);
   });
 
-  socket.on("photo:submit", ({ dataUrl }) => {
+  socket.on("photo:submit", ({ spotIndex, dataUrl }) => {
     const room = findRoomBySocket(socket.id);
     if (!room || !room.round) return;
-    room.round.submissions.set(socket.id, dataUrl);
-    io.to(room.code).emit("round:progress", {
-      received: room.round.submissions.size,
-      total: room.participants.size,
-    });
+    const activeIndex = room.round.sequence[room.round.pointer];
+    if (spotIndex !== activeIndex) return;
+    const slot = room.spots[spotIndex];
+    if (!slot || slot.ownerId !== socket.id) return;
 
-    if (room.round.submissions.size >= room.participants.size) {
-      clearTimeout(room.round.timeout);
-      finishRound(room);
-    }
+    room.round.submissions.set(spotIndex, dataUrl);
+    clearTimeout(room.round.timeout);
+    advanceStep(room);
   });
 
   socket.on("round:reset", () => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.hostId !== socket.id) return;
+    clearTimeout(room.round?.timeout);
     room.round = null;
     io.to(room.code).emit("round:reset");
   });
@@ -148,20 +151,55 @@ io.on("connection", (socket) => {
   });
 });
 
+function startRound(room) {
+  const sequence = room.spots.map((slot, i) => (slot.ownerId ? i : null)).filter((i) => i !== null);
+  room.round = { sequence, pointer: 0, submissions: new Map() };
+  runStep(room);
+}
+
+function runStep(room) {
+  if (!room.round) return;
+  if (room.round.pointer >= room.round.sequence.length) {
+    finishRound(room);
+    return;
+  }
+  const spotIndex = room.round.sequence[room.round.pointer];
+  // startAt is the moment the count reaches zero and the capture happens --
+  // the client counts backwards from it (tick "3" at startAt-3000ms, etc.) --
+  // so it has to be the full lead time *plus* the countdown length, not just
+  // the lead time, or the whole "3-2-1" would be skipped and capture would
+  // fire almost immediately.
+  const startAt = Date.now() + COUNTDOWN_LEAD_MS + STEP_SECONDS * 1000;
+  io.to(room.code).emit("countdown:started", {
+    startAt,
+    seconds: STEP_SECONDS,
+    spotIndex,
+    step: room.round.pointer,
+    totalSteps: room.round.sequence.length,
+  });
+
+  clearTimeout(room.round.timeout);
+  room.round.timeout = setTimeout(() => advanceStep(room), startAt - Date.now() + STEP_GRACE_MS);
+}
+
+function advanceStep(room) {
+  if (!room.round) return;
+  room.round.pointer += 1;
+  runStep(room);
+}
+
 function finishRound(room) {
   if (!room.round) return;
-  // Walk the spot list (not the participant list) so the strip lines up with
-  // "choose your spot" -- a spot's photo is whatever its owner captured, so
-  // someone who claimed two spots on one device shows up twice, correctly
-  // labeled, sharing the same captured frame.
-  const photos = room.spots
-    .map((slot, i) => ({ slot, i }))
-    .filter(({ slot }) => slot.ownerId && room.round.submissions.has(slot.ownerId))
-    .map(({ slot, i }) => ({
-      id: `spot-${i}`,
-      name: slot.name || room.participants.get(slot.ownerId)?.name || "Guest",
-      dataUrl: room.round.submissions.get(slot.ownerId),
-    }));
+  const photos = room.round.sequence
+    .filter((i) => room.round.submissions.has(i))
+    .map((i) => {
+      const slot = room.spots[i];
+      return {
+        id: `spot-${i}`,
+        name: slot.name || room.participants.get(slot.ownerId)?.name || "Guest",
+        dataUrl: room.round.submissions.get(i),
+      };
+    });
   io.to(room.code).emit("round:complete", { photos, settings: room.settings });
   room.round = null;
 }

@@ -96,7 +96,7 @@ export default function Home() {
         <section className="home-col home-col--form">
           <span className="washi washi--solid-ink" />
           <div className="home-col__heading">
-            <span className="eyebrow">01 — host</span>
+            <span className="eyebrow">host</span>
             <h2>Start a booth</h2>
             <p className="home-col__sub">You set the filter, color and shape everyone shares.</p>
           </div>
@@ -114,7 +114,7 @@ export default function Home() {
         <section className="home-col home-col--form">
           <span className="washi washi--solid-red" />
           <div className="home-col__heading">
-            <span className="eyebrow">02 — guest</span>
+            <span className="eyebrow">guest</span>
             <h2>Join with a code</h2>
             <p className="home-col__sub">Got a code from a friend? Hop into their booth.</p>
           </div>

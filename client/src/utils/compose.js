@@ -58,10 +58,12 @@ export async function composePhotos(photos, settings) {
     const x = pad;
     const y = headerH + i * (cellH + gap);
 
-    ctx.fillStyle = "#141414";
-    ctx.fillRect(x, y, photoW, photoH);
-
     if (shape === "heart") {
+      // The heart is a cutout on the card's own paper color, not a photo
+      // sitting in a black box -- so the corners outside the heart match
+      // the strip's background instead of being filled black.
+      ctx.fillStyle = color.paper;
+      ctx.fillRect(x, y, photoW, photoH);
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(photoW / 100, photoH / 92);
@@ -69,6 +71,8 @@ export async function composePhotos(photos, settings) {
       drawCover(ctx, img, 0, 0, 100, 92);
       ctx.restore();
     } else {
+      ctx.fillStyle = "#141414";
+      ctx.fillRect(x, y, photoW, photoH);
       drawCover(ctx, img, x, y, photoW, photoH);
       ctx.strokeStyle = "#141414";
       ctx.lineWidth = 1.5;

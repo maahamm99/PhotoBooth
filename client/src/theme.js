@@ -36,7 +36,7 @@ export const COLORS = {
   lavender: { label: "Lavender", hex: "#E1D6F5", paper: "#E1D6F5", ink: "#141414" },
 };
 
-export const MAX_SPOTS = 8;
+export const MAX_SPOTS = 4;
 
 // A heart region (viewBox 100 x 92) used to clip a whole photo into a heart shape.
 export const HEART_OUTLINE_PATH =

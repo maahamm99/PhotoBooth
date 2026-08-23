@@ -1,22 +1,38 @@
 # Together Booth
 
 A synced online photo booth: friends and family in different places join one
-"booth", see each other live, and a synchronized countdown captures a photo
-on every screen at the same instant. Everyone gets the exact same strip —
-same filter, same frame color, same layout — just like squeezing into a real
-photo booth together.
+"booth", see each other live, and take turns in front of a shared countdown
+to build one matching strip — same filter, same frame color, same layout —
+just like squeezing into a real photo booth together.
 
 ## How it works
 
 - One person **opens a booth** and gets a 5-letter code; everyone else
-  **joins with that code**.
+  **joins with that code**. Up to 4 spots per booth; someone sharing one
+  device/camera with another person can claim an extra spot for them too.
 - Participants see each other through a small peer-to-peer video mesh
   (WebRTC), so you can actually pose together.
-- The host picks a filter, a frame color and a layout (film strip or grid) —
-  it updates live for everyone.
-- When the host hits **Take the picture**, a synced countdown fires on every
-  screen. Each browser captures its own camera frame at the same moment and
-  sends it to the server, which hands everyone back one composed image.
+- The host picks a filter, a frame color and shape (square or heart) — it
+  updates live for everyone.
+- When the host hits **Take the picture**, every filled spot gets its own
+  3-second countdown, one after another — spot 1's countdown finishes and
+  captures before spot 2's starts, and so on. Whoever owns the active spot
+  captures a frame from their own camera at the count; everyone else just
+  watches whose turn it is.
+
+## Privacy: photos never touch a database or disk
+
+- Every captured frame is **canvas-drawn and composited entirely in the
+  browser** (see `client/src/utils/compose.js`) — the server never processes
+  or re-encodes an image.
+- A captured frame is relayed once, over the socket connection, only so the
+  other participants' browsers can build the same final strip. The server
+  holds it only in a plain in-memory `Map` for the few seconds a round takes
+  (`server/index.js`, `room.round.submissions`) and the reference is dropped
+  the instant the round finishes or is reset — nothing is written to disk,
+  logged, or stored in a database (there is no database in this app).
+- Once you close the booth or the round resets, there's nothing left on the
+  server for that room's photos.
 
 ## Stack
 

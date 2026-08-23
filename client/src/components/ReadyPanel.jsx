@@ -9,6 +9,7 @@ export default function ReadyPanel({
   timerText,
   statusText,
   otherSpots,
+  myTurn,
   mediaError,
   onRetryMedia,
 }) {
@@ -17,7 +18,7 @@ export default function ReadyPanel({
       <span className="washi washi--solid-red" />
       <div className="ready-panel__heading">
         <span className="eyebrow">In the booth</span>
-        <h2>{statusText}</h2>
+        <h2>{myTurn ? "Say cheese — it's your turn!" : statusText}</h2>
       </div>
 
       <VideoTile

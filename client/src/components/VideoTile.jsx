@@ -18,7 +18,7 @@ const VideoTile = forwardRef(function VideoTile(
       : undefined;
 
   return (
-    <div className={`video-tile ${compact ? "video-tile--compact" : ""}`}>
+    <div className={`video-tile ${compact ? "video-tile--compact" : ""} ${shape === "heart" ? "video-tile--heart" : ""}`}>
       <div className="video-tile__mask" style={maskStyle}>
         <video
           ref={videoRef}

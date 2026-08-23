@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   totalSpots: 1,
 };
 
-const MAX_SPOTS = 8;
+const MAX_SPOTS = 4;
 
 // code -> room
 const rooms = new Map();
@@ -65,7 +65,7 @@ function getRoom(code) {
 function joinRoom(code, socketId, name) {
   const room = getRoom(code);
   if (!room) return { error: "That booth code doesn't exist." };
-  if (room.participants.size >= MAX_SPOTS) return { error: "This booth is full (max 8)." };
+  if (room.participants.size >= MAX_SPOTS) return { error: "This booth is full (max 4)." };
   room.participants.set(socketId, { name, id: socketId });
   assignFirstOpenSpot(room, socketId, name);
   return { room };

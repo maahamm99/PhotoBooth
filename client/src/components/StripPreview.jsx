@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile.jsx";
 import { COLORS } from "../theme.js";
 
@@ -9,46 +8,21 @@ function todayLabel() {
   return `${mm}.${dd}.${d.getFullYear()}`;
 }
 
-const CELL_GAP = 6;
-const MIN_CELL = 40;
-const MAX_CELL = 220;
-
 export default function StripPreview({
   spots,
   settings,
   filterCss,
+  activeSpotIndex,
   flashOn,
   timerText,
   resultUrl,
   isHost,
-  waiting,
+  roundInProgress,
+  activeStep,
   captureDisabled,
-  progress,
   onCapture,
   onRetake,
 }) {
-  const cellsRef = useRef(null);
-  const [cellSize, setCellSize] = useState(MAX_CELL);
-  const count = spots.length || 1;
-
-  useLayoutEffect(() => {
-    const el = cellsRef.current;
-    if (!el) return;
-
-    function recompute() {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      const byHeight = Math.floor((h - CELL_GAP * (count - 1)) / count);
-      const size = Math.max(MIN_CELL, Math.min(MAX_CELL, w, byHeight));
-      setCellSize(size);
-    }
-
-    recompute();
-    const observer = new ResizeObserver(recompute);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [count]);
-
   if (resultUrl) {
     return (
       <div className="strip-col">
@@ -69,6 +43,13 @@ export default function StripPreview({
 
   const color = COLORS[settings.color] || COLORS.blush;
   const infoPosition = settings.infoPosition || "below";
+  const isHeart = settings.shape === "heart";
+
+  let hint = "Waiting for the host to start the countdown…";
+  if (roundInProgress && activeStep) {
+    const name = spots[activeStep.spotIndex]?.name || "Next spot";
+    hint = `${name}'s turn — ${activeStep.step + 1} of ${activeStep.totalSteps}`;
+  }
 
   return (
     <div className="strip-col">
@@ -77,10 +58,13 @@ export default function StripPreview({
         <p className="strip-mock__caption" style={{ color: color.ink }}>
           {settings.caption}
         </p>
-        <div className="strip-mock__cells" ref={cellsRef}>
+        <div className="strip-mock__cells">
           {spots.map((spot, i) => (
-            <div key={i} className="strip-cell-wrap" style={{ width: cellSize }}>
-              <div className={`strip-cell ${spot ? "" : "strip-cell--open"}`} style={{ width: cellSize, height: cellSize }}>
+            <div key={i} className="strip-cell-wrap">
+              <div
+                className={`strip-cell ${spot ? "" : "strip-cell--open"} ${i === activeSpotIndex ? "strip-cell--active" : ""} ${isHeart ? "strip-cell--heart" : ""}`}
+                style={{ background: isHeart ? color.paper : undefined }}
+              >
                 {spot ? (
                   <VideoTile
                     stream={spot.stream}
@@ -88,7 +72,7 @@ export default function StripPreview({
                     isLocal={spot.isLocal}
                     muted
                     filterCss={filterCss}
-                    flash={flashOn}
+                    flash={flashOn && i === activeSpotIndex}
                     shape={settings.shape}
                     showLabel={infoPosition === "center"}
                     timerText={timerText}
@@ -115,18 +99,12 @@ export default function StripPreview({
       <div className="capture-bar">
         {isHost ? (
           <button type="button" className="btn btn--ink btn--lg" disabled={captureDisabled} onClick={onCapture}>
-            {waiting ? "Developing…" : "Take the picture ✦"}
+            {roundInProgress ? "Capturing…" : "Take the picture ✦"}
           </button>
         ) : (
-          <p className="capture-bar__hint">
-            {waiting ? "Say cheese — developing your strip…" : "Waiting for the host to start the countdown…"}
-          </p>
+          <p className="capture-bar__hint">{hint}</p>
         )}
-        {progress && (
-          <p className="capture-bar__progress">
-            {progress.received}/{progress.total} smiles captured
-          </p>
-        )}
+        {roundInProgress && isHost && <p className="capture-bar__progress">{hint}</p>}
       </div>
     </div>
   );
