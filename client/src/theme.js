@@ -7,7 +7,6 @@ export const FILTERS = {
 
 export const SHAPES = {
   square: { label: "Square" },
-  heart: { label: "Heart" },
 };
 
 export const INFO_POSITIONS = {
@@ -37,14 +36,3 @@ export const COLORS = {
 };
 
 export const MAX_SPOTS = 4;
-
-// A heart region (viewBox 100 x 92) used to clip a whole photo into a heart shape.
-export const HEART_OUTLINE_PATH =
-  "M50 84C24 66 8 52 8 35 8 22 18 12 30 12c8 0 15 4 20 11 5-7 12-11 20-11 12 0 22 10 22 23 0 17-16 31-42 49z";
-
-const HEART_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 92">' +
-  `<path d="${HEART_OUTLINE_PATH}"/>` +
-  "</svg>";
-
-export const HEART_MASK = `url("data:image/svg+xml,${encodeURIComponent(HEART_SVG)}")`;

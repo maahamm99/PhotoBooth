@@ -896,10 +896,6 @@ input:focus {
   background: rgba(0, 0, 0, 0.08);
 }
 
-.strip-cell--heart {
-  border-color: transparent;
-}
-
 .strip-cell--active {
   box-shadow: 0 0 0 3px var(--red);
 }
@@ -1035,11 +1031,6 @@ input:focus {
   border-radius: 2px;
   overflow: hidden;
   background: var(--ink);
-}
-
-.video-tile--heart {
-  border-color: transparent;
-  background: transparent;
 }
 
 .video-tile:not(.video-tile--compact) {

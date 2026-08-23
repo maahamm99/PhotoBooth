@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { HEART_MASK } from "../theme.js";
 
 const VideoTile = forwardRef(function VideoTile(
   {
@@ -9,7 +8,6 @@ const VideoTile = forwardRef(function VideoTile(
     filterCss,
     flash,
     muted = true,
-    shape = "square",
     showLabel = true,
     compact = false,
     timerText,
@@ -25,14 +23,9 @@ const VideoTile = forwardRef(function VideoTile(
     if (videoRef.current) videoRef.current.srcObject = stream || null;
   }, [stream]);
 
-  const maskStyle =
-    shape === "heart"
-      ? { maskImage: HEART_MASK, WebkitMaskImage: HEART_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }
-      : undefined;
-
   return (
-    <div className={`video-tile ${compact ? "video-tile--compact" : ""} ${shape === "heart" ? "video-tile--heart" : ""}`}>
-      <div className="video-tile__mask" style={maskStyle}>
+    <div className={`video-tile ${compact ? "video-tile--compact" : ""}`}>
+      <div className="video-tile__mask">
         {capturedImage ? (
           <img src={capturedImage} alt={name} style={{ filter: filterCss }} />
         ) : (

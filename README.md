@@ -12,8 +12,7 @@ just like squeezing into a real photo booth together.
   device/camera with another person can claim an extra spot for them too.
 - Participants see each other through a small peer-to-peer video mesh
   (WebRTC), so you can actually pose together.
-- The host picks a filter, a frame color and shape (square or heart) — it
-  updates live for everyone.
+- The host picks a filter and a frame color — it updates live for everyone.
 - When the host hits **Take the picture**, every filled spot gets its own
   3-second countdown, one after another — spot 1's countdown finishes and
   captures before spot 2's starts, and so on. Whoever owns the active spot

@@ -10,10 +10,10 @@ import ReadyPanel from "../components/ReadyPanel.jsx";
 import Footer from "../components/Footer.jsx";
 
 const DEFAULT_SETTINGS = {
-  filter: "classic",
-  color: "blush",
+  filter: "noir",
+  color: "butter",
   shape: "square",
-  infoPosition: "below",
+  infoPosition: "none",
   caption: "Together",
   totalSpots: 1,
 };
@@ -353,7 +353,6 @@ export default function Booth() {
           filterCss={filterCss}
           flash={countdown === 0 && myTurn}
           countdownValue={myTurn ? countdown : null}
-          shape={settings.shape}
           timerText={timerText}
           statusText={statusText}
           otherSpots={otherSpots}

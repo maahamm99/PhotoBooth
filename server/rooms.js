@@ -3,10 +3,10 @@ import { customAlphabet } from "nanoid";
 const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
 
 const DEFAULT_SETTINGS = {
-  filter: "classic",
-  color: "blush",
+  filter: "noir",
+  color: "butter",
   shape: "square",
-  infoPosition: "below",
+  infoPosition: "none",
   caption: "Together",
   totalSpots: 1,
 };

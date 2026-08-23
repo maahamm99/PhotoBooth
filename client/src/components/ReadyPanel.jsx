@@ -6,7 +6,6 @@ export default function ReadyPanel({
   filterCss,
   flash,
   countdownValue,
-  shape,
   timerText,
   statusText,
   otherSpots,
@@ -30,7 +29,6 @@ export default function ReadyPanel({
         muted
         filterCss={filterCss}
         flash={flash}
-        shape={shape}
         timerText={timerText}
         countdownValue={countdownValue}
       />

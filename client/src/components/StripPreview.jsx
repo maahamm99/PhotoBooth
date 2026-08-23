@@ -75,7 +75,6 @@ export default function StripPreview({
 
   const color = COLORS[settings.color] || COLORS.blush;
   const infoPosition = settings.infoPosition || "below";
-  const isHeart = settings.shape === "heart";
 
   let hint = "Waiting for the host to start the countdown…";
   if (roundInProgress && activeStep) {
@@ -94,8 +93,8 @@ export default function StripPreview({
             return (
               <div key={i} className="strip-cell-wrap">
                 <div
-                  className={`strip-cell ${spot ? "" : "strip-cell--open"} ${isActive ? "strip-cell--active" : ""} ${isHeart ? "strip-cell--heart" : ""}`}
-                  style={{ background: isHeart ? color.paper : undefined, width: cellSize, height: cellSize }}
+                  className={`strip-cell ${spot ? "" : "strip-cell--open"} ${isActive ? "strip-cell--active" : ""}`}
+                  style={{ width: cellSize, height: cellSize }}
                 >
                   {spot ? (
                     <VideoTile
@@ -105,7 +104,6 @@ export default function StripPreview({
                       muted
                       filterCss={filterCss}
                       flash={flashOn && isActive}
-                      shape={settings.shape}
                       showLabel={infoPosition === "center"}
                       timerText={timerText}
                       capturedImage={captured}
