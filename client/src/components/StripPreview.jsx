@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile.jsx";
 import { COLORS } from "../theme.js";
 
@@ -9,19 +8,13 @@ function todayLabel() {
   return `${mm}.${dd}.${d.getFullYear()}`;
 }
 
-const CELL_GAP = 10;
-const MIN_CELL_H = 60;
-const LABEL_H = 16;
-
 export default function StripPreview({
   spots,
   settings,
   filterCss,
   activeSpotIndex,
-  countdown,
   flashOn,
   timerText,
-  capturedPhotos,
   resultUrl,
   isHost,
   roundInProgress,
@@ -30,28 +23,6 @@ export default function StripPreview({
   onCapture,
   onRetake,
 }) {
-  const cellsRef = useRef(null);
-  const [cellHeight, setCellHeight] = useState(200);
-  const count = spots.length || 1;
-  const labelAllowance = (settings.infoPosition || "below") === "below" ? LABEL_H : 0;
-
-  useLayoutEffect(() => {
-    const el = cellsRef.current;
-    if (!el) return;
-
-    function recompute() {
-      const h = el.clientHeight;
-      const budget = h - CELL_GAP * (count - 1) - labelAllowance * count;
-      const size = Math.max(MIN_CELL_H, Math.floor(budget / count));
-      setCellHeight(size);
-    }
-
-    recompute();
-    const observer = new ResizeObserver(recompute);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [count, labelAllowance]);
-
   if (resultUrl) {
     return (
       <div className="strip-col">
@@ -87,43 +58,37 @@ export default function StripPreview({
         <p className="strip-mock__caption" style={{ color: color.ink }}>
           {settings.caption}
         </p>
-        <div className="strip-mock__cells" ref={cellsRef}>
-          {spots.map((spot, i) => {
-            const captured = capturedPhotos?.[i];
-            const isActive = i === activeSpotIndex;
-            return (
-              <div key={i} className="strip-cell-wrap">
-                <div
-                  className={`strip-cell ${spot ? "" : "strip-cell--open"} ${isActive ? "strip-cell--active" : ""} ${isHeart ? "strip-cell--heart" : ""}`}
-                  style={{ background: isHeart ? color.paper : undefined, height: cellHeight }}
-                >
-                  {spot ? (
-                    <VideoTile
-                      stream={spot.stream}
-                      name={spot.name}
-                      isLocal={spot.isLocal}
-                      muted
-                      filterCss={filterCss}
-                      flash={flashOn && isActive}
-                      shape={settings.shape}
-                      showLabel={infoPosition === "center"}
-                      timerText={timerText}
-                      capturedImage={captured}
-                      countdownValue={isActive ? countdown : null}
-                      compact
-                    />
-                  ) : (
-                    <span className="strip-cell__empty">Spot {i + 1} open</span>
-                  )}
-                </div>
-                {spot && infoPosition === "below" && (
-                  <span className="strip-cell-wrap__name" style={{ color: color.ink }}>
-                    {spot.name}
-                  </span>
+        <div className="strip-mock__cells">
+          {spots.map((spot, i) => (
+            <div key={i} className="strip-cell-wrap">
+              <div
+                className={`strip-cell ${spot ? "" : "strip-cell--open"} ${i === activeSpotIndex ? "strip-cell--active" : ""} ${isHeart ? "strip-cell--heart" : ""}`}
+                style={{ background: isHeart ? color.paper : undefined }}
+              >
+                {spot ? (
+                  <VideoTile
+                    stream={spot.stream}
+                    name={spot.name}
+                    isLocal={spot.isLocal}
+                    muted
+                    filterCss={filterCss}
+                    flash={flashOn && i === activeSpotIndex}
+                    shape={settings.shape}
+                    showLabel={infoPosition === "center"}
+                    timerText={timerText}
+                    compact
+                  />
+                ) : (
+                  <span className="strip-cell__empty">Spot {i + 1} open</span>
                 )}
               </div>
-            );
-          })}
+              {spot && infoPosition === "below" && (
+                <span className="strip-cell-wrap__name" style={{ color: color.ink }}>
+                  {spot.name}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
         <div className="strip-mock__footer" style={{ color: color.ink }}>
           <span>{settings.caption}</span>

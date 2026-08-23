@@ -7,6 +7,7 @@ import { composePhotos } from "../utils/compose.js";
 import ControlsPanel from "../components/ControlsPanel.jsx";
 import StripPreview from "../components/StripPreview.jsx";
 import ReadyPanel from "../components/ReadyPanel.jsx";
+import CountdownOverlay from "../components/CountdownOverlay.jsx";
 import Footer from "../components/Footer.jsx";
 
 const DEFAULT_SETTINGS = {
@@ -50,9 +51,6 @@ export default function Booth() {
   const [roundInProgress, setRoundInProgress] = useState(false);
   const [resultUrl, setResultUrl] = useState(null);
   const [elapsed, setElapsed] = useState(0);
-  // spotIndex -> captured dataUrl, filled in live as each spot's turn finishes
-  // so the strip shows the actual shot in place instead of the live feed.
-  const [capturedPhotos, setCapturedPhotos] = useState({});
 
   useEffect(() => {
     if (!joined) return;
@@ -202,7 +200,6 @@ export default function Booth() {
       setResultUrl(null);
       setRoundInProgress(true);
       setActiveStep({ spotIndex, step, totalSteps });
-      if (step === 0) setCapturedPhotos({});
 
       const now = Date.now();
       for (let n = seconds; n >= 1; n--) {
@@ -230,9 +227,6 @@ export default function Booth() {
   }, []);
 
   useEffect(() => {
-    function onCaptured({ spotIndex, dataUrl }) {
-      setCapturedPhotos((prev) => ({ ...prev, [spotIndex]: dataUrl }));
-    }
     function onComplete({ photos, settings }) {
       setRoundInProgress(false);
       setActiveStep(null);
@@ -243,13 +237,10 @@ export default function Booth() {
       setRoundInProgress(false);
       setActiveStep(null);
       setCountdown(null);
-      setCapturedPhotos({});
     }
-    socket.on("spot:captured", onCaptured);
     socket.on("round:complete", onComplete);
     socket.on("round:reset", onReset);
     return () => {
-      socket.off("spot:captured", onCaptured);
       socket.off("round:complete", onComplete);
       socket.off("round:reset", onReset);
     };
@@ -300,6 +291,7 @@ export default function Booth() {
     .filter((_, i) => !mySpotIndexes.includes(i));
 
   const selfName = participants.find((p) => p.id === selfId)?.name || "Guest";
+  const activeSpotName = activeStep ? rawSpots[activeStep.spotIndex]?.name : null;
   const myTurn = activeStep !== null && mySpotIndexes.includes(activeStep.spotIndex);
 
   return (
@@ -334,10 +326,8 @@ export default function Booth() {
           settings={settings}
           filterCss={filterCss}
           activeSpotIndex={activeStep?.spotIndex ?? null}
-          countdown={countdown}
           flashOn={countdown === 0}
           timerText={timerText}
-          capturedPhotos={capturedPhotos}
           resultUrl={resultUrl}
           isHost={isHost}
           roundInProgress={roundInProgress}
@@ -352,7 +342,6 @@ export default function Booth() {
           localStream={localStream}
           filterCss={filterCss}
           flash={countdown === 0 && myTurn}
-          countdownValue={myTurn ? countdown : null}
           shape={settings.shape}
           timerText={timerText}
           statusText={statusText}
@@ -362,6 +351,8 @@ export default function Booth() {
           onRetryMedia={() => setMediaAttempt((n) => n + 1)}
         />
       </main>
+
+      <CountdownOverlay value={countdown} spotName={activeSpotName} step={activeStep?.step} totalSteps={activeStep?.totalSteps} />
       <Footer note="one spot at a time" />
     </div>
   );

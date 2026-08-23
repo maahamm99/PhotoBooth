@@ -5,7 +5,6 @@ export default function ReadyPanel({
   localStream,
   filterCss,
   flash,
-  countdownValue,
   shape,
   timerText,
   statusText,
@@ -32,7 +31,6 @@ export default function ReadyPanel({
         flash={flash}
         shape={shape}
         timerText={timerText}
-        countdownValue={countdownValue}
       />
 
       {mediaError && (
