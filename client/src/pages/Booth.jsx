@@ -12,12 +12,18 @@ import Footer from "../components/Footer.jsx";
 
 const DEFAULT_SETTINGS = {
   filter: "classic",
-  color: "ink",
+  color: "cream",
   shape: "square",
   infoPosition: "below",
   caption: "Together",
   totalSpots: 1,
 };
+
+function formatElapsed(totalSeconds) {
+  const m = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const s = String(totalSeconds % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
 
 function ensureConnected(cb) {
   if (socket.connected) return cb();
@@ -44,6 +50,13 @@ export default function Booth() {
   const [waiting, setWaiting] = useState(false);
   const [progress, setProgress] = useState(null);
   const [resultUrl, setResultUrl] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!joined) return;
+    const id = setInterval(() => setElapsed((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [joined]);
 
   const localVideoRef = useRef(null);
   const settingsRef = useRef(room?.settings);
@@ -227,7 +240,7 @@ export default function Booth() {
               <input value={gateName} onChange={(e) => setGateName(e.target.value)} maxLength={24} autoFocus />
             </label>
             {gateError && <p className="form-error">{gateError}</p>}
-            <button type="submit" className="btn btn--primary" disabled={gateBusy}>
+            <button type="submit" className="btn btn--ink" disabled={gateBusy}>
               {gateBusy ? "Joining…" : "Enter the booth"}
             </button>
           </form>
@@ -256,13 +269,23 @@ export default function Booth() {
   const mySpotIndex = participants.findIndex((p) => p.id === selfId);
   const mySpot = mySpotIndex >= 0 ? mySpotIndex + 1 : 1;
   const openSpots = totalSpots - participants.length;
+  const timerText = `${formatElapsed(elapsed)}:000`;
+
+  const otherSpots = spots
+    .map((spot, i) => ({ n: i + 1, label: spot ? spot.name : "open", ready: !!spot }))
+    .filter((s) => s.n !== mySpot);
 
   return (
-    <div className="page-fixed">
+    <div className="page-fixed page-fixed--booth">
       <header className="top-bar top-bar--booth">
-        <Link to="/" className="wordmark wordmark--small">
-          Together Booth
-        </Link>
+        <div className="wordmark-row">
+          <span className="wordmark wordmark--small">Together Booth</span>
+          <span className="badge badge--wiggle">booth open</span>
+        </div>
+        <div className="tagline">
+          <span className="tagline__dot" />
+          live · {participants.length} of {totalSpots} spots filled
+        </div>
       </header>
 
       <main className="booth-columns">
@@ -281,6 +304,7 @@ export default function Booth() {
           settings={settings}
           filterCss={filterCss}
           flashOn={countdown === 0}
+          timerText={timerText}
           resultUrl={resultUrl}
           isHost={isHost}
           waiting={waiting}
@@ -295,15 +319,18 @@ export default function Booth() {
           localStream={localStream}
           filterCss={filterCss}
           flash={countdown === 0}
+          shape={settings.shape}
+          timerText={timerText}
           mySpot={mySpot}
           openSpots={openSpots}
+          otherSpots={otherSpots}
           mediaError={mediaError}
           onRetryMedia={() => setMediaAttempt((n) => n + 1)}
         />
       </main>
 
       <CountdownOverlay value={countdown} />
-      <Footer />
+      <Footer note="everyone shoots at the same count" />
     </div>
   );
 }

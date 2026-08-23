@@ -1,8 +1,10 @@
-export default function Footer() {
+export default function Footer({ note }) {
   return (
     <footer className="site-footer">
-      <span>created with love by Maham</span>
-      <span className="site-footer__heart">♥</span>
+      <span>{note}</span>
+      <span>
+        created with love by Maham <span className="site-footer__heart">♥</span>
+      </span>
     </footer>
   );
 }

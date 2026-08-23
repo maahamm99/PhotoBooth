@@ -9,11 +9,13 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
     const url = `${window.location.origin}/b/${code}`;
     navigator.clipboard?.writeText(url);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), 1600);
   }
 
   return (
     <div className="controls-panel">
+      <span className="washi washi--solid-ink" />
+
       {isHost ? (
         <input
           className="controls-panel__caption"
@@ -29,7 +31,7 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
       <div className="controls-panel__code">
         <span>{code}</span>
         <button type="button" className="link-btn" onClick={copyLink}>
-          {copied ? "Copied ✓" : "Copy link"}
+          {copied ? "Copied!" : "Copy link"}
         </button>
       </div>
 
@@ -41,15 +43,13 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
             const isLastOpenSpot = !person && isHost && totalSpots > participants.length && i === totalSpots - 1;
             return (
               <li key={i} className="spot-row">
-                <span className="spot-row__num">{i + 1}</span>
-                {person ? (
-                  <span className="spot-pill">
-                    {person.name}
-                    {person.id === selfId ? " (you)" : ""}
-                  </span>
-                ) : (
-                  <span className="spot-pill spot-pill--open">Waiting for a guest…</span>
-                )}
+                <span className={`spot-row__num ${person ? "spot-row__num--filled" : ""}`}>{i + 1}</span>
+                <input
+                  className={`spot-row__input ${person ? "" : "spot-row__input--open"}`}
+                  readOnly
+                  value={person ? `${person.name}${person.id === selfId ? " (you)" : ""}` : ""}
+                  placeholder="Waiting for a guest…"
+                />
                 {isLastOpenSpot && (
                   <button
                     type="button"
@@ -65,11 +65,13 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
           })}
         </ol>
         {isHost && totalSpots < MAX_SPOTS && (
-          <button type="button" className="chip chip--add" onClick={() => onChange({ totalSpots: totalSpots + 1 })}>
+          <button type="button" className="btn-outline-pill" onClick={() => onChange({ totalSpots: totalSpots + 1 })}>
             + Add a spot
           </button>
         )}
       </div>
+
+      <div className="controls-panel__divider" />
 
       <div className="controls-panel__section">
         <p className="controls-panel__title">Info</p>
@@ -142,7 +144,7 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
       </div>
 
       {isHost ? (
-        <button type="button" className="btn btn--ghost controls-panel__reset" onClick={onStartOver}>
+        <button type="button" className="btn-outline controls-panel__reset" onClick={onStartOver}>
           Start over
         </button>
       ) : (

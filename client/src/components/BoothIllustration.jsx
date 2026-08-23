@@ -1,23 +1,28 @@
 export default function BoothIllustration() {
   return (
-    <svg viewBox="0 0 320 320" className="illustration" role="img" aria-label="A camera and a photo strip">
-      <rect x="46" y="150" width="94" height="118" rx="10" transform="rotate(-9 93 209)" fill="#f4f1ea" stroke="#14151a" strokeWidth="2" />
-      <rect x="58" y="162" width="70" height="52" rx="4" transform="rotate(-9 93 188)" fill="#8fce2e" opacity="0.85" />
-      <rect x="180" y="146" width="94" height="118" rx="10" transform="rotate(7 227 205)" fill="#f4f1ea" stroke="#14151a" strokeWidth="2" />
-      <rect x="192" y="158" width="70" height="52" rx="4" transform="rotate(7 227 184)" fill="#7ec4e0" opacity="0.85" />
-
-      <rect x="86" y="96" width="148" height="104" rx="16" fill="#14151a" />
-      <rect x="86" y="96" width="148" height="22" rx="10" fill="#14151a" />
-      <rect x="140" y="78" width="40" height="24" rx="6" fill="#14151a" />
-      <circle cx="160" cy="148" r="34" fill="#f4f1ea" />
-      <circle cx="160" cy="148" r="24" fill="#14151a" />
-      <circle cx="160" cy="148" r="16" fill="#3a3b44" />
-      <circle cx="150" cy="138" r="5" fill="#f4f1ea" opacity="0.6" />
-      <rect x="204" y="112" width="14" height="10" rx="3" fill="#f4f1ea" />
-
-      <path d="M40 60 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 z" fill="#f2b9c6" />
-      <circle cx="278" cy="70" r="6" fill="#7ec4e0" />
-      <circle cx="266" cy="240" r="5" fill="#2ba38f" />
+    <svg viewBox="0 0 252 196" fill="none" preserveAspectRatio="xMidYMid meet" className="illustration" role="img" aria-label="A camera with two photos tucked behind it">
+      <g stroke="#141414" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <g transform="rotate(-11 52 118)">
+          <rect x="16" y="82" width="62" height="76" rx="2" fill="#FFFFFF" />
+          <rect x="23" y="89" width="48" height="44" rx="1" fill="#F4B8B0" />
+          <path d="M30 143h34M30 150h22" opacity="0.45" />
+        </g>
+        <g transform="rotate(13 200 116)">
+          <rect x="172" y="80" width="62" height="76" rx="2" fill="#FFFFFF" />
+          <rect x="179" y="87" width="48" height="44" rx="1" fill="#EBD7A8" />
+          <path d="M186 141h34M186 148h22" opacity="0.45" />
+        </g>
+        <rect x="64" y="62" width="124" height="86" rx="8" fill="#FDF7EE" />
+        <path d="M97 62l9-14h40l9 14" fill="#FDF7EE" />
+        <circle cx="126" cy="106" r="25" fill="#FDF7EE" />
+        <circle cx="126" cy="106" r="15" />
+        <circle cx="126" cy="106" r="5.5" fill="#C4132B" stroke="none" />
+        <rect x="152" y="76" width="16" height="9" rx="1.5" fill="#C4132B" />
+        <path d="M76 132h13" opacity="0.5" />
+        <path d="M38 44l4.5 9.5L52 58l-9.5 4.5L38 72l-4.5-9.5L24 58l9.5-4.5z" stroke="#C4132B" />
+        <path d="M212 36l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" />
+        <circle cx="228" cy="168" r="3.2" stroke="#C4132B" />
+      </g>
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-import { COLORS, heartPath } from "../theme.js";
+import { COLORS, drawHeartOutline } from "../theme.js";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -18,16 +18,6 @@ function drawCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-function roundRectPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
 function todayLabel() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -36,7 +26,7 @@ function todayLabel() {
 }
 
 export async function composePhotos(photos, settings) {
-  const color = COLORS[settings.color] || COLORS.ink;
+  const color = COLORS[settings.color] || COLORS.cream;
   const shape = settings.shape || "square";
   const infoPosition = settings.infoPosition || "below";
   const images = await Promise.all(photos.map((p) => loadImage(p.dataUrl)));
@@ -45,8 +35,8 @@ export async function composePhotos(photos, settings) {
   const pad = 22;
   const gap = 16;
   const photoW = stripW - pad * 2;
-  const photoH = Math.round(photoW * 0.74);
-  const nameH = infoPosition === "below" ? 30 : 0;
+  const photoH = Math.round(photoW * 0.92);
+  const nameH = infoPosition === "below" ? 28 : 0;
   const cellH = photoH + nameH;
   const headerH = 78;
   const footerH = 92;
@@ -61,58 +51,50 @@ export async function composePhotos(photos, settings) {
 
   ctx.fillStyle = color.ink;
   ctx.textAlign = "center";
-  ctx.font = "600 26px 'Fraunces', Georgia, serif";
-  ctx.fillText(settings.caption || "Together", canvas.width / 2, 48);
+  ctx.font = "800 26px 'Bricolage Grotesque', sans-serif";
+  ctx.fillText((settings.caption || "Together").toUpperCase(), canvas.width / 2, 48);
 
   images.forEach((img, i) => {
     const x = pad;
     const y = headerH + i * (cellH + gap);
 
-    ctx.save();
+    ctx.fillStyle = "#141414";
+    ctx.fillRect(x, y, photoW, photoH);
+    drawCover(ctx, img, x, y, photoW, photoH);
+
+    ctx.strokeStyle = "#141414";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 0.75, y + 0.75, photoW - 1.5, photoH - 1.5);
+
     if (shape === "heart") {
-      heartPath(ctx, x, y, photoW, photoH);
-      ctx.clip();
-      ctx.fillStyle = "#00000015";
-      ctx.fillRect(x, y, photoW, photoH);
-      drawCover(ctx, img, x, y, photoW, photoH);
-    } else {
-      roundRectPath(ctx, x, y, photoW, photoH, 10);
-      ctx.save();
-      ctx.clip();
-      drawCover(ctx, img, x, y, photoW, photoH);
-      ctx.restore();
-      ctx.strokeStyle = `${color.ink}22`;
-      ctx.lineWidth = 1;
-      roundRectPath(ctx, x, y, photoW, photoH, 10);
-      ctx.stroke();
+      drawHeartOutline(ctx, x + photoW / 2, y + photoH / 2, photoW * 0.62);
     }
-    ctx.restore();
 
     if (infoPosition === "center") {
       ctx.save();
       ctx.textAlign = "center";
-      ctx.font = "500 14px 'Inter', 'Segoe UI', sans-serif";
-      ctx.fillStyle = "#ffffff";
+      ctx.font = "600 13px 'Instrument Sans', 'Segoe UI', sans-serif";
+      ctx.fillStyle = "#FDF7EE";
       ctx.shadowColor = "rgba(0,0,0,0.55)";
       ctx.shadowBlur = 6;
-      ctx.fillText(photos[i].name, x + photoW / 2, y + photoH - 14);
+      ctx.fillText(photos[i].name.toUpperCase(), x + photoW / 2, y + photoH - 14);
       ctx.restore();
     } else if (infoPosition === "below") {
       ctx.fillStyle = color.ink;
       ctx.textAlign = "center";
-      ctx.font = "500 14px 'Inter', 'Segoe UI', sans-serif";
-      ctx.fillText(photos[i].name, x + photoW / 2, y + photoH + 20);
+      ctx.font = "500 13px 'Instrument Sans', 'Segoe UI', sans-serif";
+      ctx.fillText(photos[i].name.toUpperCase(), x + photoW / 2, y + photoH + 19);
     }
   });
 
   ctx.fillStyle = color.ink;
   ctx.textAlign = "center";
   const footerY = canvas.height - footerH / 2 - 10;
-  ctx.font = "600 20px 'Fraunces', Georgia, serif";
-  ctx.fillText(settings.caption || "Together", canvas.width / 2, footerY);
-  ctx.font = "400 13px 'Inter', 'Segoe UI', sans-serif";
-  ctx.globalAlpha = 0.75;
-  ctx.fillText(todayLabel(), canvas.width / 2, footerY + 24);
+  ctx.font = "600 12px 'Instrument Sans', sans-serif";
+  ctx.fillText((settings.caption || "Together").toUpperCase(), canvas.width / 2, footerY);
+  ctx.font = "400 12px 'IBM Plex Mono', monospace";
+  ctx.globalAlpha = 0.7;
+  ctx.fillText(todayLabel(), canvas.width / 2, footerY + 22);
   ctx.globalAlpha = 1;
 
   return canvas.toDataURL("image/png");

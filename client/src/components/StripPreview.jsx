@@ -1,5 +1,4 @@
 import VideoTile from "./VideoTile.jsx";
-import { COLORS } from "../theme.js";
 
 function todayLabel() {
   const d = new Date();
@@ -13,6 +12,7 @@ export default function StripPreview({
   settings,
   filterCss,
   flashOn,
+  timerText,
   resultUrl,
   isHost,
   waiting,
@@ -21,18 +21,16 @@ export default function StripPreview({
   onCapture,
   onRetake,
 }) {
-  const color = COLORS[settings.color] || COLORS.ink;
-
   if (resultUrl) {
     return (
       <div className="strip-col">
         <img src={resultUrl} alt="Your shared photo strip" className="strip-col__image" />
         <div className="strip-col__actions">
-          <a className="btn btn--primary" href={resultUrl} download="together-booth.png">
+          <a className="btn btn--ink" href={resultUrl} download="together-booth.png">
             Download
           </a>
           {isHost && (
-            <button type="button" className="btn btn--ghost" onClick={onRetake}>
+            <button type="button" className="btn-outline" onClick={onRetake}>
               Take another round
             </button>
           )}
@@ -43,13 +41,12 @@ export default function StripPreview({
 
   return (
     <div className="strip-col">
-      <div className="strip-mock" style={{ background: color.paper }}>
-        <p className="strip-mock__caption" style={{ color: color.ink }}>
-          {settings.caption}
-        </p>
+      <div className="strip-mock">
+        <span className="washi washi--washi-tape" />
+        <p className="strip-mock__caption">{settings.caption}</p>
         <div className="strip-mock__cells">
           {spots.map((spot, i) => (
-            <div key={i} className="strip-cell">
+            <div key={i} className={`strip-cell ${spot ? "" : "strip-cell--open"}`}>
               {spot ? (
                 <VideoTile
                   stream={spot.stream}
@@ -59,32 +56,26 @@ export default function StripPreview({
                   filterCss={filterCss}
                   flash={flashOn}
                   shape={settings.shape}
-                  showLabel={false}
+                  showLabel
+                  timerText={timerText}
                   compact
                 />
               ) : (
-                <div className="strip-cell__empty">Spot {i + 1} open</div>
+                <span className="strip-cell__empty">Spot {i + 1} open</span>
               )}
-              {spot && settings.infoPosition === "below" && (
-                <span className="strip-cell__name" style={{ color: color.ink }}>
-                  {spot.name}
-                </span>
-              )}
-              {spot && settings.infoPosition === "center" && <span className="strip-cell__name-overlay">{spot.name}</span>}
             </div>
           ))}
         </div>
-        <p className="strip-mock__footer" style={{ color: color.ink }}>
-          {settings.caption}
-          <br />
-          <small>{todayLabel()}</small>
-        </p>
+        <div className="strip-mock__footer">
+          <span>{settings.caption}</span>
+          <span className="strip-mock__date">{todayLabel()}</span>
+        </div>
       </div>
 
       <div className="capture-bar">
         {isHost ? (
-          <button type="button" className="btn btn--primary btn--lg" disabled={captureDisabled} onClick={onCapture}>
-            {waiting ? "Developing…" : "Take the picture"}
+          <button type="button" className="btn btn--ink btn--lg" disabled={captureDisabled} onClick={onCapture}>
+            {waiting ? "Developing…" : "Take the picture ✦"}
           </button>
         ) : (
           <p className="capture-bar__hint">
