@@ -9,7 +9,7 @@ function todayLabel() {
   return `${mm}.${dd}.${d.getFullYear()}`;
 }
 
-const CELL_GAP = 10;
+const CELL_GAP = 8;
 const MIN_CELL_SIZE = 60;
 const LABEL_H = 16;
 
@@ -87,9 +87,6 @@ export default function StripPreview({
     <div className="strip-col">
       <div className="strip-mock" style={{ background: color.paper }}>
         <span className="washi washi--washi-tape" />
-        <p className="strip-mock__caption" style={{ color: color.ink }}>
-          {settings.caption}
-        </p>
         <div className="strip-mock__cells" ref={cellsRef}>
           {spots.map((spot, i) => {
             const captured = capturedPhotos?.[i];

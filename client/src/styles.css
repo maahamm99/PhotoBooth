@@ -847,25 +847,14 @@ input:focus {
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
-  width: min(300px, 100%);
+  width: min(224px, 100%);
   background: var(--cream);
   border-radius: var(--radius);
-  padding: 16px 16px 12px;
+  padding: 16px 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   box-shadow: 0 10px 26px rgba(60, 0, 8, 0.24);
-}
-
-.strip-mock__caption {
-  margin: 6px 0 0;
-  text-align: center;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: -0.4px;
-  text-transform: uppercase;
-  flex-shrink: 0;
 }
 
 /* Each card is a fixed square, sized once against the booth's max capacity
