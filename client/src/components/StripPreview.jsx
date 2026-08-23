@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile.jsx";
 import { COLORS, MAX_SPOTS, INSTAX_RATIO } from "../theme.js";
+import { downloadImage } from "../utils/downloadImage.js";
 
 function todayLabel() {
   const d = new Date();
@@ -33,6 +34,13 @@ export default function StripPreview({
 }) {
   const cellsRef = useRef(null);
   const [cellSize, setCellSize] = useState({ w: 200, h: Math.round(200 / INSTAX_RATIO) });
+  const [downloaded, setDownloaded] = useState(false);
+
+  async function handleDownload() {
+    await downloadImage(resultUrl, "together-booth.jpg");
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 2200);
+  }
   const labelAllowance = (settings.infoPosition || "below") === "below" ? LABEL_H : 0;
 
   // Sized once against the booth's max capacity (not the current spot count),
@@ -66,9 +74,9 @@ export default function StripPreview({
       <div className="strip-col">
         <img src={resultUrl} alt="Your shared photo strip" className="strip-col__image" />
         <div className="strip-col__actions">
-          <a className="btn btn--ink" href={resultUrl} download="together-booth.png">
-            Download
-          </a>
+          <button type="button" className="btn btn--ink" onClick={handleDownload}>
+            {downloaded ? "Downloaded. Check your gallery." : "Download"}
+          </button>
           {isHost && (
             <button type="button" className="btn-outline" onClick={onRetake}>
               Take another round

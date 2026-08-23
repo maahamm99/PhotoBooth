@@ -86,5 +86,5 @@ export async function composePhotos(photos, settings) {
   ctx.fillText(todayLabel(), canvas.width / 2, footerY + 22);
   ctx.globalAlpha = 1;
 
-  return canvas.toDataURL("image/png");
+  return canvas.toDataURL("image/jpeg", 0.92);
 }
