@@ -16,7 +16,7 @@ export const INFO_POSITIONS = {
   below: { label: "Below" },
 };
 
-// The brand palette: cream paper + a warm red, plus the frame-color swatches.
+// The brand palette: cream paper + a warm red for the app chrome.
 export const BRAND = {
   red: "#C4132B",
   redDark: "#8E0C1E",
@@ -27,33 +27,24 @@ export const BRAND = {
   line: "#E4D9C7",
 };
 
+// Five pastel frame colors, each paired with a dark ink that reads clearly on top.
 export const COLORS = {
-  cream: { label: "Cream", hex: "#FDF7EE", paper: "#FDF7EE", ink: "#141414" },
-  red: { label: "Red", hex: "#C4132B", paper: "#C4132B", ink: "#FDF7EE" },
-  blush: { label: "Blush", hex: "#F4B8B0", paper: "#F4B8B0", ink: "#141414" },
-  tan: { label: "Tan", hex: "#EBD7A8", paper: "#EBD7A8", ink: "#141414" },
-  teal: { label: "Teal", hex: "#2F6F62", paper: "#2F6F62", ink: "#FDF7EE" },
-  black: { label: "Black", hex: "#141414", paper: "#141414", ink: "#FDF7EE" },
+  blush: { label: "Blush", hex: "#F7D6DA", paper: "#F7D6DA", ink: "#141414" },
+  butter: { label: "Butter", hex: "#FBEFC0", paper: "#FBEFC0", ink: "#141414" },
+  mint: { label: "Mint", hex: "#CFEFDD", paper: "#CFEFDD", ink: "#141414" },
+  sky: { label: "Sky", hex: "#CFE6F5", paper: "#CFE6F5", ink: "#141414" },
+  lavender: { label: "Lavender", hex: "#E1D6F5", paper: "#E1D6F5", ink: "#141414" },
 };
 
 export const MAX_SPOTS = 8;
 
-// A hand-drawn heart outline, used as a decorative sticker over the photo
-// (not a clip mask) -- viewBox is 100 x 92.
+// A heart region (viewBox 100 x 92) used to clip a whole photo into a heart shape.
 export const HEART_OUTLINE_PATH =
   "M50 84C24 66 8 52 8 35 8 22 18 12 30 12c8 0 15 4 20 11 5-7 12-11 20-11 12 0 22 10 22 23 0 17-16 31-42 49z";
 
-export function drawHeartOutline(ctx, cx, cy, w, color = "#C4132B") {
-  const h = (w * 92) / 100;
-  const scale = w / 100;
-  ctx.save();
-  ctx.translate(cx - w / 2, cy - h / 2);
-  ctx.scale(scale, scale);
-  ctx.beginPath();
-  const p = new Path2D(HEART_OUTLINE_PATH);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.4 / scale;
-  ctx.lineJoin = "round";
-  ctx.stroke(p);
-  ctx.restore();
-}
+const HEART_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 92">' +
+  `<path d="${HEART_OUTLINE_PATH}"/>` +
+  "</svg>";
+
+export const HEART_MASK = `url("data:image/svg+xml,${encodeURIComponent(HEART_SVG)}")`;

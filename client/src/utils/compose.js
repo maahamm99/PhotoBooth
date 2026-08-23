@@ -1,4 +1,4 @@
-import { COLORS, drawHeartOutline } from "../theme.js";
+import { COLORS, HEART_OUTLINE_PATH } from "../theme.js";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ function todayLabel() {
 }
 
 export async function composePhotos(photos, settings) {
-  const color = COLORS[settings.color] || COLORS.cream;
+  const color = COLORS[settings.color] || COLORS.blush;
   const shape = settings.shape || "square";
   const infoPosition = settings.infoPosition || "below";
   const images = await Promise.all(photos.map((p) => loadImage(p.dataUrl)));
@@ -60,14 +60,19 @@ export async function composePhotos(photos, settings) {
 
     ctx.fillStyle = "#141414";
     ctx.fillRect(x, y, photoW, photoH);
-    drawCover(ctx, img, x, y, photoW, photoH);
-
-    ctx.strokeStyle = "#141414";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x + 0.75, y + 0.75, photoW - 1.5, photoH - 1.5);
 
     if (shape === "heart") {
-      drawHeartOutline(ctx, x + photoW / 2, y + photoH / 2, photoW * 0.62);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(photoW / 100, photoH / 92);
+      ctx.clip(new Path2D(HEART_OUTLINE_PATH));
+      drawCover(ctx, img, 0, 0, 100, 92);
+      ctx.restore();
+    } else {
+      drawCover(ctx, img, x, y, photoW, photoH);
+      ctx.strokeStyle = "#141414";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 0.75, y + 0.75, photoW - 1.5, photoH - 1.5);
     }
 
     if (infoPosition === "center") {

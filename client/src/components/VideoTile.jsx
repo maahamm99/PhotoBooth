@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { HEART_OUTLINE_PATH } from "../theme.js";
+import { HEART_MASK } from "../theme.js";
 
 const VideoTile = forwardRef(function VideoTile(
   { stream, name, isLocal, filterCss, flash, muted = true, shape = "square", showLabel = true, compact = false, timerText },
@@ -12,22 +12,24 @@ const VideoTile = forwardRef(function VideoTile(
     if (videoRef.current) videoRef.current.srcObject = stream || null;
   }, [stream]);
 
+  const maskStyle =
+    shape === "heart"
+      ? { maskImage: HEART_MASK, WebkitMaskImage: HEART_MASK, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }
+      : undefined;
+
   return (
     <div className={`video-tile ${compact ? "video-tile--compact" : ""}`}>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={muted}
-        style={{ filter: filterCss, transform: isLocal ? "scaleX(-1)" : "none" }}
-      />
-      {!stream && <div className="video-tile__empty">connecting…</div>}
-      {flash && <div className="video-tile__flash" />}
-      {shape === "heart" && stream && (
-        <svg viewBox="0 0 100 92" className="video-tile__heart">
-          <path d={HEART_OUTLINE_PATH} fill="none" stroke="#C4132B" strokeWidth="2.4" />
-        </svg>
-      )}
+      <div className="video-tile__mask" style={maskStyle}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={muted}
+          style={{ filter: filterCss, transform: isLocal ? "scaleX(-1)" : "none" }}
+        />
+        {!stream && <div className="video-tile__empty">connecting…</div>}
+        {flash && <div className="video-tile__flash" />}
+      </div>
       {timerText && stream && <span className="video-tile__timer">{timerText}</span>}
       {showLabel && (
         <span className="video-tile__label">

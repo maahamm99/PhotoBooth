@@ -1,9 +1,33 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FILTERS, SHAPES, INFO_POSITIONS, COLORS, MAX_SPOTS } from "../theme.js";
 
 export default function ControlsPanel({ code, settings, isHost, participants, selfId, onChange, onStartOver }) {
   const [copied, setCopied] = useState(false);
   const totalSpots = settings.totalSpots || participants.length;
+
+  // The caption input stays instant/local while typing and only pushes to the
+  // room (and everyone else) after a short pause, so typing never waits on a
+  // socket round trip.
+  const [captionLocal, setCaptionLocal] = useState(settings.caption);
+  const captionFocused = useRef(false);
+  const captionDebounce = useRef(null);
+
+  useEffect(() => {
+    if (!captionFocused.current) setCaptionLocal(settings.caption);
+  }, [settings.caption]);
+
+  function handleCaptionChange(e) {
+    const value = e.target.value;
+    setCaptionLocal(value);
+    clearTimeout(captionDebounce.current);
+    captionDebounce.current = setTimeout(() => onChange({ caption: value }), 250);
+  }
+
+  function flushCaption() {
+    captionFocused.current = false;
+    clearTimeout(captionDebounce.current);
+    onChange({ caption: captionLocal });
+  }
 
   function copyLink() {
     const url = `${window.location.origin}/b/${code}`;
@@ -19,10 +43,12 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
       {isHost ? (
         <input
           className="controls-panel__caption"
-          value={settings.caption}
+          value={captionLocal}
           maxLength={28}
           placeholder="Give it a name"
-          onChange={(e) => onChange({ caption: e.target.value })}
+          onFocus={() => (captionFocused.current = true)}
+          onChange={handleCaptionChange}
+          onBlur={flushCaption}
         />
       ) : (
         <h2 className="controls-panel__caption controls-panel__caption--static">{settings.caption}</h2>

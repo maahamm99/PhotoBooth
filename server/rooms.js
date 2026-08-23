@@ -4,7 +4,7 @@ const makeCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
 
 const DEFAULT_SETTINGS = {
   filter: "classic",
-  color: "cream",
+  color: "blush",
   shape: "square",
   infoPosition: "below",
   caption: "Together",

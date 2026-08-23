@@ -12,7 +12,7 @@ import Footer from "../components/Footer.jsx";
 
 const DEFAULT_SETTINGS = {
   filter: "classic",
-  color: "cream",
+  color: "blush",
   shape: "square",
   infoPosition: "below",
   caption: "Together",
