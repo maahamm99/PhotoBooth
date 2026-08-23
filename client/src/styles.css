@@ -593,6 +593,12 @@ input:focus {
     height: auto;
     min-height: 100vh;
   }
+  /* The camera/mic permission prompt lives in here -- put it first on
+     mobile so it's visible immediately instead of buried behind a long
+     scroll past the controls panel and strip preview. */
+  .ready-panel {
+    order: -1;
+  }
 }
 
 /* -- controls panel (left) ---------------------------------------------------- */

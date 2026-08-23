@@ -43,7 +43,7 @@ export default function Booth() {
   const [selfId, setSelfId] = useState(socket.connected ? socket.id : null);
   const [localStream, setLocalStream] = useState(null);
   const [mediaError, setMediaError] = useState("");
-  const [mediaAttempt, setMediaAttempt] = useState(0);
+  const localStreamRef = useRef(null);
 
   const [countdown, setCountdown] = useState(null);
   const [activeStep, setActiveStep] = useState(null); // { spotIndex, step, totalSteps }
@@ -109,23 +109,37 @@ export default function Booth() {
   }
 
   useEffect(() => {
-    if (!joined) return;
-    let stream;
+    localStreamRef.current = localStream;
+  }, [localStream]);
+
+  // Called directly from a click/tap handler (never from an effect on its
+  // own) so the getUserMedia() call stays inside the synchronous user
+  // gesture -- mobile Safari and other strict mobile browsers silently
+  // refuse to show the camera permission prompt otherwise.
+  function requestMedia() {
     setMediaError("");
     navigator.mediaDevices
       .getUserMedia({ video: { width: 640, height: 480 }, audio: true })
       .then((s) => {
-        stream = s;
+        localStreamRef.current?.getTracks().forEach((t) => t.stop());
         setLocalStream(s);
       })
       .catch((err) => {
         setMediaError(err?.message || "Camera and microphone access was blocked.");
       });
+  }
+
+  useEffect(() => {
+    if (!joined) return;
+    // Best-effort automatic attempt -- works fine on most desktop browsers.
+    // Mobile browsers that block this silently still get the explicit
+    // "Enable camera" button in ReadyPanel as a real, tap-gated fallback.
+    requestMedia();
     return () => {
-      stream?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
       setLocalStream(null);
     };
-  }, [joined, mediaAttempt]);
+  }, [joined]);
 
   const participants = room?.participants || [];
   const peerIds = useMemo(
@@ -358,7 +372,7 @@ export default function Booth() {
           otherSpots={otherSpots}
           myTurn={myTurn}
           mediaError={mediaError}
-          onRetryMedia={() => setMediaAttempt((n) => n + 1)}
+          onRetryMedia={requestMedia}
         />
       </main>
       <Footer note="one spot at a time" />

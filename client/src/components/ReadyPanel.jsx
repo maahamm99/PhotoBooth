@@ -33,11 +33,15 @@ export default function ReadyPanel({
         countdownValue={countdownValue}
       />
 
-      {mediaError && (
+      {!localStream && (
         <div className="banner banner--warn">
-          <p>{mediaError} Together Booth needs your camera to take part.</p>
+          <p>
+            {mediaError
+              ? `${mediaError} Together Booth needs your camera to take part.`
+              : "Together Booth needs your camera and microphone."}
+          </p>
           <button type="button" className="btn-outline" onClick={onRetryMedia}>
-            Try again
+            {mediaError ? "Try again" : "Enable camera & mic"}
           </button>
         </div>
       )}
