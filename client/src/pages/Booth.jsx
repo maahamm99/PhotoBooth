@@ -4,6 +4,7 @@ import { socket } from "../socket.js";
 import { useWebRTC } from "../hooks/useWebRTC.js";
 import { FILTERS } from "../theme.js";
 import { composePhotos } from "../utils/compose.js";
+import { takePendingStream } from "../utils/mediaHandoff.js";
 import ControlsPanel from "../components/ControlsPanel.jsx";
 import StripPreview from "../components/StripPreview.jsx";
 import ReadyPanel from "../components/ReadyPanel.jsx";
@@ -41,7 +42,10 @@ export default function Booth() {
   const [gateBusy, setGateBusy] = useState(false);
 
   const [selfId, setSelfId] = useState(socket.connected ? socket.id : null);
-  const [localStream, setLocalStream] = useState(null);
+  // Handed off from Home's create/join click, which requested the camera as
+  // part of that same tap -- see utils/mediaHandoff.js for why this can't
+  // just be router state (a MediaStream isn't structured-cloneable).
+  const [localStream, setLocalStream] = useState(() => takePendingStream());
   const [mediaError, setMediaError] = useState("");
   const localStreamRef = useRef(null);
 
@@ -90,18 +94,32 @@ export default function Booth() {
     };
   }, []);
 
-  function submitGate(e) {
+  // The camera prompt has to fire from this very click (not a later effect)
+  // or mobile Safari silently refuses to show it at all.
+  async function submitGate(e) {
     e.preventDefault();
     if (!gateName.trim()) return;
     setGateBusy(true);
     setGateError("");
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: true });
+    } catch (err) {
+      setGateBusy(false);
+      setGateError(err?.message || "Camera and microphone access was blocked. Allow access and try again.");
+      return;
+    }
+
     ensureConnected(() => {
       socket.emit("room:join", { code, name: gateName.trim() }, (res) => {
         setGateBusy(false);
         if (res?.ok) {
           setRoom(res.room);
+          setLocalStream(stream);
           setJoined(true);
         } else {
+          stream.getTracks().forEach((t) => t.stop());
           setGateError(res?.error || "Couldn't join that booth.");
         }
       });
@@ -130,16 +148,21 @@ export default function Booth() {
   }
 
   useEffect(() => {
-    if (!joined) return;
-    // Best-effort automatic attempt -- works fine on most desktop browsers.
-    // Mobile browsers that block this silently still get the explicit
-    // "Enable camera" button in ReadyPanel as a real, tap-gated fallback.
+    // Home's create/join form and the gate form above both request the
+    // camera as part of the same click that joins the room, so by the time
+    // we get here there's usually already a stream. Only fall back to an
+    // automatic attempt (e.g. a stale/refreshed session) when there isn't
+    // one yet -- and even then, the "Enable camera" button in ReadyPanel is
+    // the real, tap-gated fallback for mobile browsers that block this.
+    if (!joined || localStreamRef.current) return;
     requestMedia();
+  }, [joined]);
+
+  useEffect(() => {
     return () => {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
-      setLocalStream(null);
     };
-  }, [joined]);
+  }, []);
 
   const participants = room?.participants || [];
   const peerIds = useMemo(

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket.js";
+import { setPendingStream } from "../utils/mediaHandoff.js";
 import Footer from "../components/Footer.jsx";
 import BoothIllustration from "../components/BoothIllustration.jsx";
 
@@ -17,7 +18,8 @@ export default function Home() {
   const [createName, setCreateName] = useState("");
   const [joinName, setJoinName] = useState("");
   const [codeChars, setCodeChars] = useState(["", "", "", "", ""]);
-  const [error, setError] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [joinError, setJoinError] = useState("");
   const [busy, setBusy] = useState("");
 
   const joinCode = codeChars.join("");
@@ -31,32 +33,65 @@ export default function Home() {
     }
   }
 
-  function handleCreate(e) {
+  // getUserMedia() has to be called directly from this click (not a later
+  // effect on the booth page) or mobile Safari silently refuses to show the
+  // camera permission prompt at all.
+  async function requestCamera() {
+    return navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: true });
+  }
+
+  async function handleCreate(e) {
     e.preventDefault();
     if (!createName.trim()) return;
+    setCreateError("");
     setBusy("create");
+
+    let stream;
+    try {
+      stream = await requestCamera();
+    } catch (err) {
+      setBusy("");
+      setCreateError(err?.message || "Camera and microphone access was blocked. Allow access and try again.");
+      return;
+    }
+
     ensureConnected(() => {
       socket.emit("room:create", { name: createName.trim() }, (res) => {
         setBusy("");
         if (res?.ok) {
+          setPendingStream(stream);
           navigate(`/b/${res.room.code}`, { state: { name: createName.trim(), initialRoom: res.room } });
+        } else {
+          stream.getTracks().forEach((t) => t.stop());
         }
       });
     });
   }
 
-  function handleJoin(e) {
+  async function handleJoin(e) {
     e.preventDefault();
     if (!joinName.trim() || joinCode.length < 5) return;
-    setError("");
+    setJoinError("");
     setBusy("join");
+
+    let stream;
+    try {
+      stream = await requestCamera();
+    } catch (err) {
+      setBusy("");
+      setJoinError(err?.message || "Camera and microphone access was blocked. Allow access and try again.");
+      return;
+    }
+
     ensureConnected(() => {
       socket.emit("room:join", { code: joinCode, name: joinName.trim() }, (res) => {
         setBusy("");
         if (res?.ok) {
+          setPendingStream(stream);
           navigate(`/b/${res.room.code}`, { state: { name: joinName.trim(), initialRoom: res.room } });
         } else {
-          setError(res?.error || "Couldn't join that booth.");
+          stream.getTracks().forEach((t) => t.stop());
+          setJoinError(res?.error || "Couldn't join that booth.");
         }
       });
     });
@@ -105,6 +140,7 @@ export default function Home() {
               Your name
               <input value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="e.g. Amara" maxLength={24} />
             </label>
+            {createError && <p className="form-error">{createError}</p>}
             <button type="submit" className="btn btn--ink" disabled={busy === "create"}>
               {busy === "create" ? "Opening…" : "Open a new booth ✦"}
             </button>
@@ -140,7 +176,7 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            {error && <p className="form-error">{error}</p>}
+            {joinError && <p className="form-error">{joinError}</p>}
             <button type="submit" className="btn btn--red" disabled={busy === "join"}>
               {busy === "join" ? "Joining…" : "Join booth →"}
             </button>
