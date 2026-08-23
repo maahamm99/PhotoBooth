@@ -6,7 +6,7 @@ export const FILTERS = {
 };
 
 export const SHAPES = {
-  square: { label: "Square" },
+  square: { label: "Classic" },
 };
 
 export const INFO_POSITIONS = {
@@ -36,3 +36,7 @@ export const COLORS = {
 };
 
 export const MAX_SPOTS = 4;
+
+// Instax Wide's image area is ~99 x 62mm -- a wide landscape rectangle,
+// not a square. Every photo cell uses this ratio (width / height).
+export const INSTAX_RATIO = 99 / 62;

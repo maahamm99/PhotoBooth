@@ -1,4 +1,4 @@
-import { COLORS } from "../theme.js";
+import { COLORS, INSTAX_RATIO } from "../theme.js";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -34,7 +34,7 @@ export async function composePhotos(photos, settings) {
   const pad = 22;
   const gap = 16;
   const photoW = stripW - pad * 2;
-  const photoH = Math.round(photoW * 0.92);
+  const photoH = Math.round(photoW / INSTAX_RATIO);
   const nameH = infoPosition === "below" ? 28 : 0;
   const cellH = photoH + nameH;
   const headerH = pad;

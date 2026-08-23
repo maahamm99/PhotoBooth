@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile.jsx";
-import { COLORS, MAX_SPOTS } from "../theme.js";
+import { COLORS, MAX_SPOTS, INSTAX_RATIO } from "../theme.js";
 
 function todayLabel() {
   const d = new Date();
@@ -32,14 +32,15 @@ export default function StripPreview({
   onRetake,
 }) {
   const cellsRef = useRef(null);
-  const [cellSize, setCellSize] = useState(200);
+  const [cellSize, setCellSize] = useState({ w: 200, h: Math.round(200 / INSTAX_RATIO) });
   const labelAllowance = (settings.infoPosition || "below") === "below" ? LABEL_H : 0;
 
   // Sized once against the booth's max capacity (not the current spot count),
-  // so a card is always the same fixed square -- adding or removing a spot
-  // never resizes the ones already there. Re-runs whenever the result view
-  // toggles, since that unmounts/remounts this container as a fresh node
-  // that a stale ResizeObserver would otherwise never pick back up.
+  // so a card is always the same fixed Instax-wide rectangle -- adding or
+  // removing a spot never resizes the ones already there. Re-runs whenever
+  // the result view toggles, since that unmounts/remounts this container as
+  // a fresh node that a stale ResizeObserver would otherwise never pick
+  // back up.
   useLayoutEffect(() => {
     const el = cellsRef.current;
     if (!el) return;
@@ -48,8 +49,10 @@ export default function StripPreview({
       const h = el.clientHeight;
       const w = el.clientWidth;
       const heightBudget = h - CELL_GAP * (MAX_SPOTS - 1) - labelAllowance * MAX_SPOTS;
-      const size = Math.max(MIN_CELL_SIZE, Math.min(w, Math.floor(heightBudget / MAX_SPOTS)));
-      setCellSize(size);
+      const maxHFromHeight = heightBudget / MAX_SPOTS;
+      const maxHFromWidth = w / INSTAX_RATIO;
+      const cellH = Math.max(MIN_CELL_SIZE, Math.floor(Math.min(maxHFromHeight, maxHFromWidth)));
+      setCellSize({ w: Math.round(cellH * INSTAX_RATIO), h: cellH });
     }
 
     recompute();
@@ -87,7 +90,7 @@ export default function StripPreview({
 
   return (
     <div className="strip-col">
-      <div className="strip-mock" style={{ background: color.paper, width: cellSize + CARD_PAD_X * 2 }}>
+      <div className="strip-mock" style={{ background: color.paper, width: cellSize.w + CARD_PAD_X * 2 }}>
         <span className="washi washi--washi-tape" />
         <div className="strip-mock__cells" ref={cellsRef}>
           {spots.map((spot, i) => {
@@ -97,7 +100,7 @@ export default function StripPreview({
               <div key={i} className="strip-cell-wrap">
                 <div
                   className={`strip-cell ${spot ? "" : "strip-cell--open"} ${isActive ? "strip-cell--active" : ""}`}
-                  style={{ width: cellSize, height: cellSize }}
+                  style={{ width: cellSize.w, height: cellSize.h }}
                 >
                   {spot ? (
                     <VideoTile
