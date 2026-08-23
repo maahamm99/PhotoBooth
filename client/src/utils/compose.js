@@ -37,7 +37,7 @@ export async function composePhotos(photos, settings) {
   const photoH = Math.round(photoW * 0.92);
   const nameH = infoPosition === "below" ? 28 : 0;
   const cellH = photoH + nameH;
-  const headerH = 78;
+  const headerH = pad;
   const footerH = 92;
 
   const canvas = document.createElement("canvas");
@@ -47,11 +47,6 @@ export async function composePhotos(photos, settings) {
 
   ctx.fillStyle = color.paper;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = color.ink;
-  ctx.textAlign = "center";
-  ctx.font = "800 26px 'Bricolage Grotesque', sans-serif";
-  ctx.fillText((settings.caption || "Together").toUpperCase(), canvas.width / 2, 48);
 
   images.forEach((img, i) => {
     const x = pad;

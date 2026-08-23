@@ -12,6 +12,7 @@ function todayLabel() {
 const CELL_GAP = 8;
 const MIN_CELL_SIZE = 60;
 const LABEL_H = 16;
+const CARD_PAD_X = 14;
 
 export default function StripPreview({
   spots,
@@ -86,7 +87,7 @@ export default function StripPreview({
 
   return (
     <div className="strip-col">
-      <div className="strip-mock" style={{ background: color.paper }}>
+      <div className="strip-mock" style={{ background: color.paper, width: cellSize + CARD_PAD_X * 2 }}>
         <span className="washi washi--washi-tape" />
         <div className="strip-mock__cells" ref={cellsRef}>
           {spots.map((spot, i) => {

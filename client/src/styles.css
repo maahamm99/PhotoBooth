@@ -846,11 +846,11 @@ input:focus {
   flex: 1;
   min-height: 0;
   max-height: 100%;
+  max-width: min(224px, 100%);
   overflow: hidden;
-  width: min(224px, 100%);
   background: var(--cream);
   border-radius: var(--radius);
-  padding: 16px 14px 10px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
