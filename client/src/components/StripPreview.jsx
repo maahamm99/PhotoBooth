@@ -36,7 +36,9 @@ export default function StripPreview({
 
   // Sized once against the booth's max capacity (not the current spot count),
   // so a card is always the same fixed square -- adding or removing a spot
-  // never resizes the ones already there.
+  // never resizes the ones already there. Re-runs whenever the result view
+  // toggles, since that unmounts/remounts this container as a fresh node
+  // that a stale ResizeObserver would otherwise never pick back up.
   useLayoutEffect(() => {
     const el = cellsRef.current;
     if (!el) return;
@@ -53,7 +55,7 @@ export default function StripPreview({
     const observer = new ResizeObserver(recompute);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [labelAllowance]);
+  }, [labelAllowance, !!resultUrl]);
 
   if (resultUrl) {
     return (
