@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   shape: "square",
   infoPosition: "none",
   caption: "Together",
-  totalSpots: 1,
+  totalSpots: 4,
 };
 
 const MAX_SPOTS = 4;
@@ -48,7 +48,7 @@ function createRoom(hostSocketId, hostName) {
   const room = {
     code,
     hostId: hostSocketId,
-    settings: { ...DEFAULT_SETTINGS, totalSpots: 0 },
+    settings: { ...DEFAULT_SETTINGS },
     participants: new Map([[hostSocketId, { name: hostName, id: hostSocketId }]]),
     spots: [],
     round: null,

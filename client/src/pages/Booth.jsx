@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS = {
   shape: "square",
   infoPosition: "none",
   caption: "Together",
-  totalSpots: 1,
+  totalSpots: 4,
 };
 
 function formatElapsed(totalSeconds) {
