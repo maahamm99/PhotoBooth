@@ -252,28 +252,38 @@ export default function Booth() {
   const isHost = !!(room && selfId && room.hostId === selfId);
   const settings = room?.settings || DEFAULT_SETTINGS;
   const filterCss = FILTERS[settings.filter]?.css;
-  const totalSpots = Math.max(settings.totalSpots || 1, participants.length);
+  const rawSpots = room?.spots || [];
+  const totalSpots = rawSpots.length;
 
-  const spots = Array.from({ length: totalSpots }, (_, i) => {
-    const person = participants[i];
-    if (!person) return null;
-    const isLocal = person.id === selfId;
+  const spots = rawSpots.map((slot) => {
+    if (!slot.ownerId) return null;
+    const isLocal = slot.ownerId === selfId;
     return {
-      id: person.id,
-      name: person.name,
+      id: slot.ownerId,
+      name: slot.name,
       isLocal,
-      stream: isLocal ? localStream : remoteStreams.get(person.id),
+      stream: isLocal ? localStream : remoteStreams.get(slot.ownerId),
     };
   });
 
-  const mySpotIndex = participants.findIndex((p) => p.id === selfId);
-  const mySpot = mySpotIndex >= 0 ? mySpotIndex + 1 : 1;
-  const openSpots = totalSpots - participants.length;
+  const mySpotIndexes = rawSpots.reduce((acc, s, i) => (s.ownerId === selfId ? [...acc, i] : acc), []);
+  const mySpotLabel =
+    mySpotIndexes.length <= 1
+      ? `spot ${mySpotIndexes[0] + 1 || 1}`
+      : `spots ${mySpotIndexes.map((i) => i + 1).join(" & ")}`;
+  const openSpots = rawSpots.filter((s) => !s.ownerId).length;
   const timerText = `${formatElapsed(elapsed)}:000`;
 
-  const otherSpots = spots
-    .map((spot, i) => ({ n: i + 1, label: spot ? spot.name : "open", ready: !!spot }))
-    .filter((s) => s.n !== mySpot);
+  const statusText =
+    openSpots > 0
+      ? `You're in ${mySpotLabel} — waiting on ${openSpots} more`
+      : `You're in ${mySpotLabel} — everyone's here`;
+
+  const otherSpots = rawSpots
+    .map((slot, i) => ({ n: i + 1, label: slot.ownerId ? slot.name : "open", ready: !!slot.ownerId }))
+    .filter((_, i) => !mySpotIndexes.includes(i));
+
+  const selfName = participants.find((p) => p.id === selfId)?.name || "Guest";
 
   return (
     <div className="page-fixed page-fixed--booth">
@@ -284,7 +294,7 @@ export default function Booth() {
         </div>
         <div className="tagline">
           <span className="tagline__dot" />
-          live · {participants.length} of {totalSpots} spots filled
+          live · {totalSpots - openSpots} of {totalSpots} spots filled
         </div>
       </header>
 
@@ -293,9 +303,12 @@ export default function Booth() {
           code={code}
           settings={settings}
           isHost={isHost}
-          participants={participants}
+          spots={rawSpots}
           selfId={selfId}
           onChange={(patch) => socket.emit("settings:update", patch)}
+          onClaimSpot={(index) => socket.emit("spot:claim", { index, name: selfName })}
+          onReleaseSpot={(index) => socket.emit("spot:release", { index })}
+          onRenameSpot={(index, name) => socket.emit("spot:rename", { index, name })}
           onStartOver={() => socket.emit("round:reset")}
         />
 
@@ -321,8 +334,7 @@ export default function Booth() {
           flash={countdown === 0}
           shape={settings.shape}
           timerText={timerText}
-          mySpot={mySpot}
-          openSpots={openSpots}
+          statusText={statusText}
           otherSpots={otherSpots}
           mediaError={mediaError}
           onRetryMedia={() => setMediaAttempt((n) => n + 1)}

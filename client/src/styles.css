@@ -743,6 +743,9 @@ input:focus {
 .spot-row__input:not(.spot-row__input--open) {
   border-style: solid;
   background: #fff;
+}
+
+.spot-row__input[readonly] {
   cursor: default;
 }
 
@@ -762,6 +765,24 @@ input:focus {
 
 .spot-row__remove:hover {
   color: var(--red);
+}
+
+.spot-row__claim {
+  flex: none;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: none;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.spot-row__claim:hover {
+  background: var(--ink);
+  color: var(--cream);
 }
 
 .chip-row {

@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { FILTERS, SHAPES, INFO_POSITIONS, COLORS, MAX_SPOTS } from "../theme.js";
+import SpotRow from "./SpotRow.jsx";
 
-export default function ControlsPanel({ code, settings, isHost, participants, selfId, onChange, onStartOver }) {
+export default function ControlsPanel({
+  code,
+  settings,
+  isHost,
+  spots,
+  selfId,
+  onChange,
+  onClaimSpot,
+  onReleaseSpot,
+  onRenameSpot,
+  onStartOver,
+}) {
   const [copied, setCopied] = useState(false);
-  const totalSpots = settings.totalSpots || participants.length;
+  const totalSpots = spots.length;
 
   // The caption input stays instant/local while typing and only pushes to the
   // room (and everyone else) after a short pause, so typing never waits on a
@@ -64,31 +76,20 @@ export default function ControlsPanel({ code, settings, isHost, participants, se
       <div className="controls-panel__section">
         <p className="controls-panel__title">Choose your spot</p>
         <ol className="spot-list">
-          {Array.from({ length: totalSpots }).map((_, i) => {
-            const person = participants[i];
-            const isLastOpenSpot = !person && isHost && totalSpots > participants.length && i === totalSpots - 1;
-            return (
-              <li key={i} className="spot-row">
-                <span className={`spot-row__num ${person ? "spot-row__num--filled" : ""}`}>{i + 1}</span>
-                <input
-                  className={`spot-row__input ${person ? "" : "spot-row__input--open"}`}
-                  readOnly
-                  value={person ? `${person.name}${person.id === selfId ? " (you)" : ""}` : ""}
-                  placeholder="Waiting for a guest…"
-                />
-                {isLastOpenSpot && (
-                  <button
-                    type="button"
-                    className="spot-row__remove"
-                    title="Remove this spot"
-                    onClick={() => onChange({ totalSpots: totalSpots - 1 })}
-                  >
-                    ×
-                  </button>
-                )}
-              </li>
-            );
-          })}
+          {spots.map((slot, i) => (
+            <SpotRow
+              key={i}
+              index={i}
+              slot={slot}
+              isSelf={slot.ownerId === selfId}
+              isHost={isHost}
+              isLastOpenRemovable={!slot.ownerId && i === totalSpots - 1}
+              onRename={(idx, name) => onRenameSpot(idx, name)}
+              onClaim={(idx) => onClaimSpot(idx)}
+              onRelease={(idx) => onReleaseSpot(idx)}
+              onShrink={() => onChange({ totalSpots: totalSpots - 1 })}
+            />
+          ))}
         </ol>
         {isHost && totalSpots < MAX_SPOTS && (
           <button type="button" className="btn-outline-pill" onClick={() => onChange({ totalSpots: totalSpots + 1 })}>

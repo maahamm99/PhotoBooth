@@ -7,17 +7,11 @@ export default function ReadyPanel({
   flash,
   shape,
   timerText,
-  mySpot,
-  openSpots,
+  statusText,
   otherSpots,
   mediaError,
   onRetryMedia,
 }) {
-  const statusText =
-    openSpots > 0
-      ? `You're in spot ${mySpot} — waiting on ${openSpots} more`
-      : `You're in spot ${mySpot} — everyone's here`;
-
   return (
     <aside className="ready-panel">
       <span className="washi washi--solid-red" />

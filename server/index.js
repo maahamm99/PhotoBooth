@@ -9,6 +9,10 @@ import {
   getRoom,
   joinRoom,
   leaveRoom,
+  claimSpot,
+  releaseSpot,
+  renameSpot,
+  setTotalSpots,
   roomSummary,
   findRoomBySocket,
 } from "./rooms.js";
@@ -59,11 +63,42 @@ io.on("connection", (socket) => {
   socket.on("settings:update", (partial) => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.hostId !== socket.id) return;
-    room.settings = { ...room.settings, ...partial };
-    if (partial.totalSpots !== undefined) {
-      room.settings.totalSpots = Math.min(8, Math.max(room.participants.size, partial.totalSpots));
+    const { totalSpots, ...rest } = partial;
+    room.settings = { ...room.settings, ...rest };
+    if (totalSpots !== undefined) {
+      setTotalSpots(room, totalSpots);
+      // totalSpots changes the spots array too, so send the whole room.
+      broadcastRoom(room);
+    } else {
+      io.to(room.code).emit("settings:update", room.settings);
     }
-    io.to(room.code).emit("settings:update", room.settings);
+  });
+
+  // Claim an open spot for yourself -- lets people sharing one device/camera
+  // each get their own numbered spot in the strip.
+  socket.on("spot:claim", ({ index, name }) => {
+    const room = findRoomBySocket(socket.id);
+    if (!room) return;
+    const fallbackName = room.participants.get(socket.id)?.name || "Guest";
+    if (claimSpot(room, index, socket.id, name || fallbackName)) {
+      broadcastRoom(room);
+    }
+  });
+
+  socket.on("spot:release", ({ index }) => {
+    const room = findRoomBySocket(socket.id);
+    if (!room) return;
+    if (releaseSpot(room, index, socket.id)) {
+      broadcastRoom(room);
+    }
+  });
+
+  socket.on("spot:rename", ({ index, name }) => {
+    const room = findRoomBySocket(socket.id);
+    if (!room) return;
+    if (renameSpot(room, index, socket.id, name)) {
+      broadcastRoom(room);
+    }
   });
 
   socket.on("webrtc:signal", ({ to, data }) => {
@@ -115,14 +150,17 @@ io.on("connection", (socket) => {
 
 function finishRound(room) {
   if (!room.round) return;
-  // Order by join order (spot number) rather than submission arrival order,
-  // so the strip always lines up with the "choose your spot" list.
-  const photos = Array.from(room.participants.keys())
-    .filter((id) => room.round.submissions.has(id))
-    .map((id) => ({
-      id,
-      name: room.participants.get(id)?.name || "Guest",
-      dataUrl: room.round.submissions.get(id),
+  // Walk the spot list (not the participant list) so the strip lines up with
+  // "choose your spot" -- a spot's photo is whatever its owner captured, so
+  // someone who claimed two spots on one device shows up twice, correctly
+  // labeled, sharing the same captured frame.
+  const photos = room.spots
+    .map((slot, i) => ({ slot, i }))
+    .filter(({ slot }) => slot.ownerId && room.round.submissions.has(slot.ownerId))
+    .map(({ slot, i }) => ({
+      id: `spot-${i}`,
+      name: slot.name || room.participants.get(slot.ownerId)?.name || "Guest",
+      dataUrl: room.round.submissions.get(slot.ownerId),
     }));
   io.to(room.code).emit("round:complete", { photos, settings: room.settings });
   room.round = null;
