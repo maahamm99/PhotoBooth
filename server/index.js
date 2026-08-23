@@ -130,6 +130,9 @@ io.on("connection", (socket) => {
     if (!slot || slot.ownerId !== socket.id) return;
 
     room.round.submissions.set(spotIndex, dataUrl);
+    // Show the shot in its cell right away, everywhere, instead of making
+    // everyone wait for the whole round to finish.
+    io.to(room.code).emit("spot:captured", { spotIndex, dataUrl });
     clearTimeout(room.round.timeout);
     advanceStep(room);
   });
