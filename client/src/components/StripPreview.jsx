@@ -34,12 +34,13 @@ export default function StripPreview({
 }) {
   const cellsRef = useRef(null);
   const [cellSize, setCellSize] = useState({ w: 200, h: Math.round(200 / INSTAX_RATIO) });
-  const [downloaded, setDownloaded] = useState(false);
+  const [downloadedVia, setDownloadedVia] = useState(null);
 
   async function handleDownload() {
-    await downloadImage(resultUrl, "together-booth.jpg");
-    setDownloaded(true);
-    setTimeout(() => setDownloaded(false), 2200);
+    const via = await downloadImage(resultUrl, "together-booth.jpg");
+    if (!via) return; // user backed out of the share sheet -- nothing saved
+    setDownloadedVia(via);
+    setTimeout(() => setDownloadedVia(null), 2200);
   }
   const labelAllowance = (settings.infoPosition || "below") === "below" ? LABEL_H : 0;
 
@@ -75,7 +76,7 @@ export default function StripPreview({
         <img src={resultUrl} alt="Your shared photo strip" className="strip-col__image" />
         <div className="strip-col__actions">
           <button type="button" className="btn btn--ink" onClick={handleDownload}>
-            {downloaded ? "Downloaded. Check your gallery." : "Download"}
+            {downloadedVia === "share" ? "Downloaded. Check your gallery." : downloadedVia === "file" ? "Downloaded" : "Download"}
           </button>
           {isHost && (
             <button type="button" className="btn-outline" onClick={onRetake}>
